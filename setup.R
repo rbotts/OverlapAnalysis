@@ -9,3 +9,4 @@ sample.data <- read.table("sampledata.csv", header=TRUE, sep=",", stringsAsFacto
 sample.data["Date"] <- as.Date(sample.data["Date"][[1]], "%m/%d/%Y")
 sample.data["TimeRad"] <- sample.data["Time"][[1]]*2*pi/24
 ind.data <- subset(sample.data, sample.data["Independent"] == "Yes")
+print(table(ind.data$Species))
