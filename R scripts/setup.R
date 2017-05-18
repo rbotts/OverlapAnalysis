@@ -3,7 +3,7 @@
 require("overlap")
 
 #Importing data from the sample csv
-sample.data <- read.table("sampledata.csv", header=TRUE, sep=",", stringsAsFactors=FALSE)
+sample.data <- read.table("Examples/sampledata.csv", header=TRUE, sep=",", stringsAsFactors=FALSE)
 
 #Reformatting data
 sample.data["Date"] <- as.Date(sample.data["Date"][[1]], "%m/%d/%Y")
