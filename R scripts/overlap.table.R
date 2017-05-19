@@ -1,4 +1,6 @@
 ##Creating a matrix that shows the overlap between every set of two species
+library(compiler)
+
 #Setup and preallocation
 dimensions <- length(names(table(ind.data$Common)))
 ovl.table.orig <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(names(table(ind.data$Common)), names(table(ind.data$Common))))
@@ -6,6 +8,8 @@ ovl.table.lower <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(
 ovl.table.upper <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(names(table(ind.data$Common)), names(table(ind.data$Common))))
 
 #Actually calculating the values
+n.compile <- getCompilerOption("optimize")
+enableJIT(3)
 for (i in 1:dimensions) {
   name1 <- names(table(ind.data$Common))[i]
   animal1 <- subset(ind.data$TimeRad, ind.data$Common == name1)
@@ -30,6 +34,7 @@ for (i in 1:dimensions) {
     ovl.table.upper[i,j] <- ovl.boot.ci[4,2]
   }
 }
+enableJIT(n.compile)
 
 print(ovl.table.orig)
 print(ovl.table.lower)
