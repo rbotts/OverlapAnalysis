@@ -17,6 +17,7 @@ if (max.time > 1 & max.time <= 24) {
 } else if (max.time <= 1) {
   ind.data["TimeRad"] <- ind.data["Time"][[1]]*2*pi
 } else print("Unknown time format.")
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*", "\\1", ind.data$Survey.Name)
 
 #Removing species that have less than 2 independent observations
 ind.data <- as.data.frame(setDT(ind.data)[, .SD[.N >2], Species])

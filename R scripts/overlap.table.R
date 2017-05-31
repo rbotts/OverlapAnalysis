@@ -1,5 +1,6 @@
 ##Creating a matrix that shows the overlap between every set of two species
 library(compiler)
+require(overlap)
 
 #Setup and preallocation
 dimensions <- length(names(table(ind.data$Common)))
