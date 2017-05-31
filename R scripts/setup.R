@@ -11,7 +11,12 @@ ind.data <- subset(sample.data, sample.data["Independent"] == "Yes")
 ind.data <- subset(ind.data, ind.data$Species != "Unknown")
 ind.data <- subset(ind.data, ind.data$Species != "")
 ind.data["Date"] <- as.Date(ind.data["Date"][[1]], "%m/%d/%Y")
-ind.data["TimeRad"] <- ind.data["Time"][[1]]*2*pi/24
+max.time <- max(ind.data$Time)
+if (max.time > 1 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data["Time"][[1]]*2*pi/24
+} else if (max.time <= 1) {
+  ind.data["TimeRad"] <- ind.data["Time"][[1]]*2*pi
+} else print("Unknown time format.")
 
 #Removing species that have less than 2 independent observations
 ind.data <- as.data.frame(setDT(ind.data)[, .SD[.N >2], Species])

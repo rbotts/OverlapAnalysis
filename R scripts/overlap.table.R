@@ -6,6 +6,7 @@ dimensions <- length(names(table(ind.data$Common)))
 ovl.table.orig <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(names(table(ind.data$Common)), names(table(ind.data$Common))))
 ovl.table.lower <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(names(table(ind.data$Common)), names(table(ind.data$Common))))
 ovl.table.upper <- matrix(nrow = dimensions, ncol = dimensions, dimnames = list(names(table(ind.data$Common)), names(table(ind.data$Common))))
+n.boot <- 10000 #The number of bootstrap samples to take, recommend ten thousand (10000)
 
 #Actually calculating the values
 n.compile <- getCompilerOption("optimize")
@@ -13,11 +14,11 @@ enableJIT(3)
 for (i in 1:dimensions) {
   name1 <- names(table(ind.data$Common))[i]
   animal1 <- subset(ind.data$TimeRad, ind.data$Common == name1)
-  boot1 <- resample(animal1, 10000)
-  for (j in 1:dimensions) {
+  boot1 <- resample(animal1, n.boot)
+  for (j in (i+1):dimensions) {
     name2 <- names(table(ind.data$Common))[j]
     animal2 <- subset(ind.data$TimeRad, ind.data$Common == name2)
-    boot2 <- resample(animal2, 10000)
+    boot2 <- resample(animal2, n.boot)
     
     print(paste("Estimating overlap between", name1, "and", name2, "..."))
     if (length(min(animal1, animal2)) <= 75) {
