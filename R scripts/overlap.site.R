@@ -37,7 +37,7 @@ if (ready == "y") {
     animal2 <- subset(ind.data$TimeRad, ind.data$Species == name2 & ind.data$Site == sitelist[i])
     
     #Small sample size estimator
-    if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 5) {
+    if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 15) {
       boot1 <- resample(animal1, n.boot)
       boot2 <- resample(animal2, n.boot)
       

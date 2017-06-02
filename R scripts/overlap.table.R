@@ -22,7 +22,7 @@ for (i in 1:dimensions) {
     animal2 <- subset(ind.data$TimeRad, ind.data$Common == name2)
     
     print(paste("Estimating overlap between", name1, "and", name2, "..."))
-    if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 5) {
+    if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 15) {
       boot2 <- resample(animal2, n.boot)
       ovl.orig <- overlapEst(animal1, animal2, adjust=c(0.8, NA, NA))[1]
       ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
