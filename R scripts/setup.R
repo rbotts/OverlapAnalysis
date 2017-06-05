@@ -23,5 +23,9 @@ ind.data["Site"] <- gsub("\\s*York Univ\\s*", "ASBC", ind.data$Site)
 ind.data["Site"] <- gsub("\\s*Copal\\s*|\\s*Marta\\s*", "Pejibaye", ind.data$Site)
 ind.data["Site"] <- gsub("\\s*PN Carara\\s*|\\s*Carara\\s*", "PNC", ind.data$Site)
 ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
+ind.data$Habitat[ind.data$Site == "Savegre Valley"|ind.data$Site == "Chirripo"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "PNT"|ind.data$Site == "Pejibaye"] <- "Cloud Forest"
+ind.data$Habitat[ind.data$Site == "PNC"|ind.data$Site == "PNLC"|ind.data$Site == "CB"|ind.data$Site == "Campanario"|ind.data$Site == "ASBC"] <- "Lowland Forest"
 
 print(table(ind.data$Species))
+print(table(ind.data$Site))
+print(table(ind.data$Habitat))
