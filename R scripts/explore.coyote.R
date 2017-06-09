@@ -6,8 +6,6 @@ namelist <- names(table(ind.data$Species))
 sitelist <- names(table(ind.data$Site))
 coyote.abundance <- list(ASBC=17.89, CB=0, Chirripo=13.34, Copal=0, Marta=5.68, Pejibaye=mean(5.68, 0), PNC=0, PNLC=0, PNT=mean(1.85,1.66), "Savegre Valley"=83.00)
 coyote.ovl.list <- list()
-coyote.ovl.vec <- c()
-
 
 for (j in 1:length(namelist)) {
   name1 <- namelist[j]
@@ -30,6 +28,7 @@ for (j in 1:length(namelist)) {
   }
 }
 
+#Plotting correlation and calculating coefficients
 for (j in 1:length(namelist)) {
   if (length(coyote.ovl.list[[namelist[j]]]) > 3) {
     namelist2 <- names(coyote.ovl.list[[namelist[j]]])
