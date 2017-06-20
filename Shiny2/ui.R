@@ -16,6 +16,7 @@ fluidPage(
   <li>\"<b>Time</b>\", which holds the time of day at which the photograph was taken, in decimal format, out of either 24 hours (e.g: 11:59pm -> 23.98) or 1 day (e.g: 11:59pm -> 0.99).</li>
   <li>\"<b>Survey.Name</b>\", which contains the <u>site</u>, the <u>year</u> (optional, but must be in 20xx format if present), and the <u>season</u> in which the study took place (e.g: Site1 Summer 2017, Site3 Fall 2010, Spring 2008 Site5).</li>
 </ul>
+<i>Note: Files with the filename \"MooringActivityRawData2.csv\" may behave somewhat strangely due to some data grouping functions that are hard-coded into the app. If you do not use that name for your file, it will act normally.</i>
              ")
       ),
       column(4,

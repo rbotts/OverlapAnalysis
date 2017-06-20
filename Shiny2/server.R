@@ -10,7 +10,7 @@ overlapCI <- function(animal1, animal2, n.boot) {
     boot1 <- resample(animal1, n.boot)
     boot2 <- resample(animal2, n.boot)
     ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
-    ovl.boot.ci <- bootCI(ovl[1], ovl.boot)
+    ovl.boot.ci <- bootCI(ovl["estimate"], ovl.boot)
     ovl["lower"] <- ovl.boot.ci[4,1]
     ovl["upper"] <- ovl.boot.ci[4,2]
     
@@ -19,7 +19,7 @@ overlapCI <- function(animal1, animal2, n.boot) {
     boot1 <- resample(animal1, n.boot)
     boot2 <- resample(animal2, n.boot)
     ovl.boot <- bootEst(boot1, boot2, adjust=c(NA, 1, NA))[,2]
-    ovl.boot.ci <<- bootCI(ovl.orig, ovl.boot)
+    ovl.boot.ci <<- bootCI(ovl["estimate"], ovl.boot)
     ovl["lower"] <- ovl.boot.ci[4,1]
     ovl["upper"] <- ovl.boot.ci[4,2]
   } else ovl["estimate"] <- "Sample too small"
@@ -44,45 +44,59 @@ function(input, output) {
     ind.data["Site"] <<- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*", "", ind.data$Survey.Name)
     ind.data["Season"] <<- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
     
+    #Grouping for our data set; hopefully no users call their data file "MooringActivityRawData2.csv"
+    if (tail((input$updata)$name, n=1) == "MooringActivityRawData2.csv") {
+      ind.data["Site"] <- gsub("\\s*York Univ\\s*", "ASBC", ind.data$Site)
+      ind.data["Site"] <- gsub("\\s*Copal\\s*|\\s*Marta\\s*", "Pejibaye", ind.data$Site)
+      ind.data["Site"] <- gsub("\\s*PN Carara\\s*|\\s*Carara\\s*", "PNC", ind.data$Site)
+      ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
+    }
+    
+    #Two species UI
     output$"2speciesUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
-      selectInput(inputId = "2name1", label="Choose the first species:", choices=namelist)
-      selectInput(inputId = "2name2", label="Choose the second species:", choices=namelist)
-      
       sitelist <<- names(table(ind.data$Site))
-      checkboxGroupInput(inputId = "2sites", label="Filter by site(s)", choices=sitelist, selected=sitelist)
-      
       seasonlist <<- names(table(ind.data$Season))
-      checkboxGroupInput(inputId = "2seasons", label="Filter by season(s)", choices=seasonlist, selected=seasonlist)
+      
+      div(
+        selectInput(inputId = "2name1", label="Choose the first species:", choices=namelist),
+        selectInput(inputId = "2name2", label="Choose the second species:", choices=namelist),
+        checkboxGroupInput(inputId = "2sites", label="Filter by site(s)", choices=sitelist, selected=sitelist),
+        checkboxGroupInput(inputId = "2seasons", label="Filter by season(s)", choices=seasonlist, selected=seasonlist)
+      )
     })
     
+    #One species UI
     output$"1speciesUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       sitelist <<- names(table(ind.data$Site))
       seasonlist <<- names(table(ind.data$Season))
-      fluidRow(
-        column(3,
-               selectInput(inputId = "1name1", label = "Choose the species of interest:", choices = namelist)
-        )
-      )
-      fluidRow(
-        column(3,
-               checkboxGroupInput(inputId = "1site1", label = "Group A's sites:", choices = sitelist, selected = sitelist)
+      
+      div(
+        fluidRow(
+          column(3,
+                 selectInput(inputId = "1name1", label = "Choose the species of interest:", choices = namelist)
+          )
         ),
-        column(3,
-               checkboxGroupInput(inputId = "1season1", label = "Group A's seasons:", choices = seasonlist, selected = seasonlist)
-        ),
-        column(3,
-               checkboxGroupInput(inputId = "1site2", label = "Group B's sites:", choices = sitelist, selected = sitelist)
-        ),
-        column(3,
-               checkboxGroupInput(inputId = "1season2", label = "Group B's seasons:", choices = seasonlist, selected = seasonlist)
+        fluidRow(
+          column(3,
+                 checkboxGroupInput(inputId = "1site1", label = "Group A's sites:", choices = sitelist, selected = sitelist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "1season1", label = "Group A's seasons:", choices = seasonlist, selected = seasonlist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "1site2", label = "Group B's sites:", choices = sitelist, selected = sitelist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "1season2", label = "Group B's seasons:", choices = seasonlist, selected = seasonlist)
+          )
         )
       )
     })
   })
   
-  #Two species
+  #Two species plot
   output$"2ovlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -96,8 +110,9 @@ function(input, output) {
       main=paste("Overlap between", input$"2name1", "and", input$"2name2")
       )
     legend("top", legend = c(input$"2name1", input$"2name2"), col=c("black", "blue"), lty=c(1,2))
-    })
-
+  })
+  
+  #Two species confidence interval
   CIvalue2 <- eventReactive(eventExpr = input$"2bootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
@@ -117,7 +132,7 @@ function(input, output) {
     cat(CIvalue2()["estimate"], CIvalue2()["lower"], CIvalue2()["upper"])
   })
   
-  #Single Species
+  #Single species plot
   output$"1ovlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -133,6 +148,7 @@ function(input, output) {
     legend("top", legend = c("Group A", "Group B"), col=c("black", "blue"), lty=c(1,2))
   })
   
+  #Single species confidence interval
   CIvalue1 <- eventReactive(eventExpr = input$"1bootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
