@@ -97,6 +97,39 @@ function(input, output) {
         )
       )
     })
+    
+    #Manual UI
+    output$"manUI" <- renderUI({
+      namelist <<- names(table(ind.data$Species))
+      sitelist <<- names(table(ind.data$Site))
+      seasonlist <<- names(table(ind.data$Season))
+      
+      div(
+        fluidRow(
+          column(3,
+                 selectInput(inputId = "mname1", label = "Choose the first species:", choices = namelist)
+          ),
+          column(3, offset = 3,
+            selectInput(inputId = "mname2", label = "Choose the second species:", choices = namelist) 
+          )
+        ),
+        fluidRow(
+          column(3,
+                 checkboxGroupInput(inputId = "msite1", label = paste("First species's sites:"), choices = sitelist, selected = sitelist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "mseason1", label = paste("First species's seasons:"), choices = seasonlist, selected = seasonlist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "msite2", label = paste("Second species's sites:"), choices = sitelist, selected = sitelist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "mseason2", label = paste("Second species's seasons:"), choices = seasonlist, selected = seasonlist)
+          )
+        )
+      )
+    })
+    
   })
   
   #Two species plot
@@ -193,6 +226,55 @@ function(input, output) {
   output$"1bootText" <- renderUI({
     HTML(
         paste0("<b>", CIvalue1()["estimate"], "</b>", ", ", CIvalue1()["lower"], ", ", CIvalue1()["upper"])
+    )
+  })
+  
+  #Manual overlap plot
+  output$"movlplot" <- renderPlot({
+    overlapPlot(
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"mname1" &
+               ind.data$Site %in% input$"msite1" &
+               ind.data$Season %in% input$"mseason1"),
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"mname2" &
+               ind.data$Site %in% input$"msite2" &
+               ind.data$Season %in% input$"mseason2"),
+      main=paste("Overlap between", input$"mname1", "and", input$"mname2")
+    )
+    legend("top", legend = c(input$"mname1", input$"mname2"), col=c("black", "blue"), lty=c(1,2))
+  })
+  output$"movln" <- renderText({paste(
+    input$"mname1", "n =", length(subset(ind.data$TimeRad,
+                                         ind.data$Species == input$"mname1" &
+                                           ind.data$Site %in% input$"msite1" &
+                                           ind.data$Season %in% input$"mseason1")),
+    ";",
+    input$"mname2", "n =", length(subset(ind.data$TimeRad,
+                                         ind.data$Species == input$"mname2" &
+                                           ind.data$Site %in% input$"msite2" &
+                                           ind.data$Season %in% input$"mseason2"))
+  )})
+  
+  #Manual confidence interval
+  CIvaluem <- eventReactive(eventExpr = input$"mbootButton", valueExpr = {
+    overlapCI(
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"mname1" &
+               ind.data$Site %in% input$"msite1" &
+               ind.data$Season %in% input$"mseason1"),
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"mname2" &
+               ind.data$Site %in% input$"msite2" &
+               ind.data$Season %in% input$"mseason2"),
+      input$"mn.boot"*1000
+    )
+  }
+  )
+  
+  output$"mbootText" <- renderUI({
+    HTML(
+      paste0("<b>", CIvaluem()["estimate"], "</b>", ", ", CIvaluem()["lower"], ", ", CIvaluem()["upper"])
     )
   })
 }

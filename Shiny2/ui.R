@@ -72,6 +72,29 @@ fluidPage(
                div(style = "height:20px")
         )
       )
+    ),
+    
+    #Manual tab
+    tabPanel(title = "Manual Selection",
+      fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarilly statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
+      wellPanel(
+        uiOutput("manUI")
+      ),
+      fluidRow(
+        column(8,
+          plotOutput("movlplot")
+        ),
+        column(4,
+               div(style = "height:20px"),
+               textOutput("movln"),
+               div(style = "height:20px"),
+               sliderInput("mn.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
+               actionButton(inputId = "mbootButton", label="Find Confidence Interval (15+ Minutes!)"),
+               HTML("<br><b>Estimate</b>, Lower, Upper:<br>"),
+               uiOutput("mbootText"),
+               div(style = "height:20px")
+        )
+      )
     )
   )
 )
