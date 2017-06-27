@@ -11,8 +11,9 @@ overlapCI <- function(animal1, animal2, n.boot) {
     boot2 <- resample(animal2, n.boot)
     ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
     ovl.boot.ci <- bootCI(ovl["estimate"], ovl.boot)
-    ovl["lower"] <- ovl.boot.ci[4,1]
-    ovl["upper"] <- ovl.boot.ci[4,2]
+    ovl["estimate"] <- sprintf("%1.4f", ovl["estimate"])
+    ovl["lower"] <- sprintf("%1.4f", ovl.boot.ci[4,1])
+    ovl["upper"] <- sprintf("%1.4f", ovl.boot.ci[4,2])
     
   } else if (min(length(animal1), length(animal2)) > 75) {
     ovl["estimate"] <- overlapEst(animal1, animal2, adjust=c(NA, 1, NA))[2]
@@ -20,8 +21,9 @@ overlapCI <- function(animal1, animal2, n.boot) {
     boot2 <- resample(animal2, n.boot)
     ovl.boot <- bootEst(boot1, boot2, adjust=c(NA, 1, NA))[,2]
     ovl.boot.ci <<- bootCI(ovl["estimate"], ovl.boot)
-    ovl["lower"] <- ovl.boot.ci[4,1]
-    ovl["upper"] <- ovl.boot.ci[4,2]
+    ovl["estimate"] <- sprintf("%1.4f", ovl["estimate"])
+    ovl["lower"] <- sprintf("%1.4f", ovl.boot.ci[4,1])
+    ovl["upper"] <- sprintf("%1.4f", ovl.boot.ci[4,2])
   } else ovl["estimate"] <- "Sample too small"
   
   return(ovl)
@@ -34,6 +36,7 @@ function(input, output) {
     ind.data <<- read.table(file = tail((input$updata)$datapath, n=1), header=TRUE, sep=",", stringsAsFactors=FALSE)
     ind.data <<- subset(ind.data, ind.data["Independent"] ==  "Yes")
     ind.data <<- subset(ind.data, ind.data$Species != "Unknown")
+    ind.data <<- subset(ind.data, ind.data$Species != "unknown")
     ind.data <<- subset(ind.data, ind.data$Species != "")
     max.time <- max(ind.data$Time)
     if (max.time > 12 & max.time <= 24) {
@@ -111,6 +114,17 @@ function(input, output) {
       )
     legend("top", legend = c(input$"2name1", input$"2name2"), col=c("black", "blue"), lty=c(1,2))
   })
+  output$"2ovln" <- renderText({paste(
+    input$"2name1", "n =", length(subset(ind.data$TimeRad,
+                                         ind.data$Species == input$"2name1" &
+                                           ind.data$Site %in% input$"2sites" &
+                                           ind.data$Season %in% input$"2seasons")),
+    ";",
+    input$"2name2", "n =", length(subset(ind.data$TimeRad,
+                                              ind.data$Species == input$"2name2" &
+                                                ind.data$Site %in% input$"2sites" &
+                                                ind.data$Season %in% input$"2seasons"))
+  )})
   
   #Two species confidence interval
   CIvalue2 <- eventReactive(eventExpr = input$"2bootButton", valueExpr = {
@@ -128,8 +142,10 @@ function(input, output) {
     }
   )
   
-  output$"2bootText" <- renderPrint({
-    cat(CIvalue2()["estimate"], CIvalue2()["lower"], CIvalue2()["upper"])
+  output$"2bootText" <- renderUI({
+    HTML(
+      paste0("<b>", CIvalue2()["estimate"], "</b>", ", ", CIvalue2()["lower"], ", ", CIvalue2()["upper"])
+    )
   })
   
   #Single species plot
@@ -147,6 +163,16 @@ function(input, output) {
     )
     legend("top", legend = c("Group A", "Group B"), col=c("black", "blue"), lty=c(1,2))
   })
+  output$"1ovln" <- renderText({paste(
+    "Group A n =", length(subset(ind.data$TimeRad,
+                                 ind.data$Species == input$"1name1" &
+                                   ind.data$Site %in% input$"1site1" &
+                                   ind.data$Season %in% input$"1season1")),
+    "; Group B n =", length(subset(ind.data$TimeRad,
+                                 ind.data$Species == input$"1name1" &
+                                   ind.data$Site %in% input$"1site2" &
+                                   ind.data$Season %in% input$"1season2"))
+  )})
   
   #Single species confidence interval
   CIvalue1 <- eventReactive(eventExpr = input$"1bootButton", valueExpr = {
@@ -164,7 +190,9 @@ function(input, output) {
   }
   )
   
-  output$"1bootText" <- renderPrint({
-    cat(CIvalue1()["estimate"], CIvalue1()["lower"], CIvalue1()["upper"])
+  output$"1bootText" <- renderUI({
+    HTML(
+        paste0("<b>", CIvalue1()["estimate"], "</b>", ", ", CIvalue1()["lower"], ", ", CIvalue1()["upper"])
+    )
   })
 }

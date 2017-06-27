@@ -12,7 +12,7 @@ fluidPage(
 <h4>Uploaded files must be in csv format. Each row represents an observation, and the following columns must be present:</h4>
 <ul>
   <li>\"<b>Independent</b>\", with a value of \"Yes\" indicating that the observation is independent of others (to prevent autocorrelation).</li>
-  <li>\"<b>Species</b>\", which holds the <i><u>species name</u></i> of the animal in the observation.</li>
+  <li>\"<b>Species</b>\", which holds the <i><u>species name</u></i> of the animal in the observation. Blank, \"unknown\", and \"Unknown\" values will be removed automatically.</li>
   <li>\"<b>Time</b>\", which holds the time of day at which the photograph was taken, in decimal format, out of either 24 hours (e.g: 11:59pm -> 23.98) or 1 day (e.g: 11:59pm -> 0.99).</li>
   <li>\"<b>Survey.Name</b>\", which contains the <u>site</u>, the <u>year</u> (optional, but must be in 20xx format if present), and the <u>season</u> in which the study took place (e.g: Site1 Summer 2017, Site3 Fall 2010, Spring 2008 Site5).</li>
 </ul>
@@ -39,10 +39,13 @@ fluidPage(
                column(9,
                       fluidRow(plotOutput("2ovlplot")),
                       fluidRow(
+                        div(style = "height:20px"),
+                        textOutput("2ovln"),
+                        div(style = "height:20px"),
                         sliderInput("2n.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
                         actionButton(inputId = "2bootButton", label="Find Confidence Interval (15+ Minutes!)"),
-                        div("Estimate, Lower, Upper:\n"),
-                        textOutput("2bootText"),
+                        HTML("<br><b>Estimate</b>, Lower, Upper:<br>"),
+                        uiOutput("2bootText"),
                         div(style = "height:20px")
                       )
                     )
@@ -60,10 +63,12 @@ fluidPage(
         ),
         column(4,
                div(style = "height:20px"),
+               textOutput("1ovln"),
+               div(style = "height:20px"),
                sliderInput("1n.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
                actionButton(inputId = "1bootButton", label="Find Confidence Interval (15+ Minutes!)"),
-               div("Estimate, Lower, Upper:\n"),
-               textOutput("1bootText"),
+               HTML("<br><b>Estimate</b>, Lower, Upper:<br>"),
+               uiOutput("1bootText"),
                div(style = "height:20px")
         )
       )
