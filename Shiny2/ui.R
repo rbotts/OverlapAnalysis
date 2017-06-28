@@ -17,6 +17,8 @@ fluidPage(
   <li>\"<b>Survey.Name</b>\", which contains the <u>site</u>, the <u>year</u> (optional, but must be in 20xx format if present), and the <u>season</u> in which the study took place (e.g: Site1 Summer 2017, Site3 Fall 2010, Spring 2008 Site5).</li>
 </ul>
 <i>Note: Files with the filename \"MooringActivityRawData2.csv\" may behave somewhat strangely due to some data grouping functions that are hard-coded into the app. If you do not use that name for your file, it will act normally.</i>
+<br>
+<br>The source code for this app is available <u><a href=\"https://github.com/rbotts/OverlapAnalysis\">here</a></u> on Github.
              ")
       ),
       column(4,
@@ -42,6 +44,8 @@ fluidPage(
                         div(style = "height:20px"),
                         textOutput("2ovln"),
                         div(style = "height:20px"),
+                        uiOutput("2watson"),
+                        div(style = "height:20px"),
                         sliderInput("2n.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
                         actionButton(inputId = "2bootButton", label="Find Confidence Interval (15+ Minutes!)"),
                         HTML("<br><b>Estimate</b>, Lower, Upper:<br>"),
@@ -65,6 +69,8 @@ fluidPage(
                div(style = "height:20px"),
                textOutput("1ovln"),
                div(style = "height:20px"),
+               uiOutput("1watson"),
+               div(style = "height:20px"),
                sliderInput("1n.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
                actionButton(inputId = "1bootButton", label="Find Confidence Interval (15+ Minutes!)"),
                HTML("<br><b>Estimate</b>, Lower, Upper:<br>"),
@@ -76,7 +82,7 @@ fluidPage(
     
     #Manual tab
     tabPanel(title = "Manual Selection",
-      fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarilly statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
+      fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarily statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
       wellPanel(
         uiOutput("manUI")
       ),
@@ -87,6 +93,8 @@ fluidPage(
         column(4,
                div(style = "height:20px"),
                textOutput("movln"),
+               div(style = "height:20px"),
+               uiOutput("mwatson"),
                div(style = "height:20px"),
                sliderInput("mn.boot", "Thousands of Bootstrap Samples", 1, 10, 10),
                actionButton(inputId = "mbootButton", label="Find Confidence Interval (15+ Minutes!)"),
