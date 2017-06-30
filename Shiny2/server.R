@@ -29,65 +29,54 @@ overlapCI <- function(animal1, animal2, n.boot) {
   return(ovl)
 }
 
-#Following function based on S-plus code licensed under GPLv2+ by Ulric Lund at http://statweb.calpoly.edu/lund/
-#Modified by TJ Wiegman in June 2017, with the following changes:
-#1 - Removed all cat() statements
-#2 - Now returns values rather than printing to console
-#3 - Changed default alpha value from 0 to 0.05
-watson2 <- function(x, y, alpha = 0.05, plot = FALSE) {
+#Declaring Watson functions, for easy calling later
+watson2 <- function(x, y) { #Function to calculate U-squared statistic, modified to work with "tied" data (See: Zar 1999)
   n1 <- length(x)
   n2 <- length(y)
-  n <- n1 + n2
-  if(n < 18) {
-    return("Total Sample Size < 18:  Consult tabulated critical values")
+  #if (min(n1, n2) <= 17) return("Sample too small")
+  N <- n1+n2
+  
+  a <- c(x,y) #Putting all unique values into one ordered set, creating a unified coordinate system
+  a <- a[duplicated(a) == FALSE]
+  a <- a[order(a)]
+  kmax <- length(a)
+  
+  t1 <- t2 <- m1 <- m2 <- c1 <- c2 <- rep.int(0, kmax) #Preallocating several variables
+  
+  for (k in 1:kmax) { #Finding the frequency of each value in x and y, respectively
+    t1[k] <- sum(x==a[k])
+    t2[k] <- sum(y==a[k])
   }
-  if(plot == TRUE) {
-    x <- sort(x %% (2 * pi))
-    y <- sort(y %% (2 * pi))
-    plot.edf(x, main = "Comparison of Empirical CDFs", xlab= "", ylab = "")
-    par(new = TRUE)
-    plot.edf(y, xlab = "", ylab = "", axes = FALSE, lty = 2)
-  }
-  x <- cbind(sort(x %% (2 * pi)), rep(1, n1))
-  y <- cbind(sort(y %% (2 * pi)), rep(2, n2))
-  xx <- rbind(x, y)
-  rank <- order(xx[, 1])
-  xx <- cbind(xx[rank,  ], seq(1:n))
-  a <- c(1:n)
-  b <- c(1:n)
-  for(i in 1:n) {
-    a[i] <- sum(xx[1:i, 2] == 1)
-    b[i] <- sum(xx[1:i, 2] == 2)
-  }
-  d <- b/n2 - a/n1
-  dbar <- mean(d)
-  u2 <- (n1 * n2)/n^2 * sum((d - dbar)^2)
-  crits <- c(99, 0.385, 0.268, 0.187, 0.152)
-  if(sum(alpha == c(0, 0.001, 0.01, 0.05, 0.1)) == 0)
-    stop("Invalid input for alpha")
-  else if(alpha == 0) {
-    if(u2 > 0.385)
-      return("P-value < 0.001")
-    else if(u2 > 0.268)
-      return("0.001 < P-value < 0.01")
-    else if(u2 > 0.187)
-      return("0.01 < P-value < 0.05")
-    else if(u2 > 0.152)
-      return("0.05 < P-value < 0.10")
-    else return("P-value > 0.10")
-  }
-  else {
-    index <- (1:5)[alpha == c(0, 0.001, 0.01, 0.05, 0.1)]
-    Critical <- crits[index]
-    if (u2 > Critical) Reject <- TRUE #Reject the null hypothesis; x and y are significantly different
-    else Reject <- FALSE #Do not reject the null hypothesis; x and y are not significantly different
-    
-    return(list("Reject"=Reject, "U2"=u2, "Alpha"=alpha, "CriticalValue"=Critical))
-  }
+  
+  m1 <- cumsum(t1) #Calculating the cumulative frequency distributions of x and y, respectively
+  m2 <- cumsum(t2)
+  
+  c1 <- m1/n1 #Calculating the cumulative relative frequency distributions of x and y, respectively
+  c2 <- m2/n2
+  
+  d <- c1-c2 
+  t <- t1+t2 #The total frequency of each value; used when there are multiple observations of a value (ties)
+  
+  da <- sum(d*t)
+  db <- sum(d*d*t)
+  U2 <- ((n1*n2)/(N^2))*(db - ((da^2)/N)) #Calculating the U-squared statistic
+  
+  return(U2)
 }
-#End of code based on work of Ulric Lund
+watson2test <- function(x, y) { #Function to approximate the p-value of Watson's U-squared, given two vectors (See: Tiku 1965)
+  U2 <- watson2(x, y) #Calculate U-squared
+  N <- length(x) + length(y)
+  
+  a <- ((21*N)-56)/(840*(N-1.5))
+  b <- (N-1.5)/(42*N)
+  f <- ((49*N)*(N-1))/(20*((N-1.5)^2)) #Approximation constants
+  
+  chi <- (U2-a)/b
+  p <- pchisq(q = chi, df = f, lower.tail = FALSE) #Approximating from chi-squared distribution
+  return(p)
+}
 
-#Server function
+#=========================== Server function ==================================
 function(input, output) {
   #Generate dataset from uploaded file
   observeEvent(eventExpr = input$dataButton, handlerExpr = {
@@ -217,7 +206,7 @@ function(input, output) {
                                                 ind.data$Season %in% input$"2seasons"))
   )})
   output$"2watson" <- renderUI({
-    wresult <- watson2(subset(ind.data$TimeRad,
+    U2 <- watson2(subset(ind.data$TimeRad,
                               ind.data$Species == input$"2name1" &
                                 ind.data$Site %in% input$"2sites" &
                                 ind.data$Season %in% input$"2seasons"),
@@ -225,15 +214,15 @@ function(input, output) {
                               ind.data$Species == input$"2name2" &
                                 ind.data$Site %in% input$"2sites" &
                                 ind.data$Season %in% input$"2seasons"))
-    if (wresult$Reject == TRUE) {
-      div(HTML(
-        paste0("Reject the null hypothesis. ", input$"2name1", " and ", input$"2name2", " have <b>significantly different</b> activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    } else if (wresult$Reject == FALSE) {
-      div(HTML(
-        paste0("Do not reject the null hypothesis. ", input$"2name1", " and ", input$"2name2", " do <b>not</b> have significantly different activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    }
+    p <- watson2test(subset(ind.data$TimeRad,
+                            ind.data$Species == input$"2name1" &
+                              ind.data$Site %in% input$"2sites" &
+                              ind.data$Season %in% input$"2seasons"),
+                     subset(ind.data$TimeRad,
+                            ind.data$Species == input$"2name2" &
+                              ind.data$Site %in% input$"2sites" &
+                              ind.data$Season %in% input$"2seasons"))
+    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Two species confidence interval
@@ -284,7 +273,7 @@ function(input, output) {
                                    ind.data$Season %in% input$"1season2"))
   )})
   output$"1watson" <- renderUI({
-    wresult <- watson2(subset(ind.data$TimeRad,
+    U2 <- watson2(subset(ind.data$TimeRad,
                                 ind.data$Species == input$"1name1" &
                                 ind.data$Site %in% input$"1site1" &
                                 ind.data$Season %in% input$"1season1"),
@@ -292,15 +281,15 @@ function(input, output) {
                                 ind.data$Species == input$"1name1" &
                                 ind.data$Site %in% input$"1site2" &
                                 ind.data$Season %in% input$"1season2"))
-    if (wresult$Reject == TRUE) {
-      div(HTML(
-        paste0("Reject the null hypothesis. Group A and Group B have <b>significantly different</b> activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    } else if (wresult$Reject == FALSE) {
-      div(HTML(
-        paste0("Do not reject the null hypothesis. Group A and Group B do <b>not</b> have significantly different activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    }
+    p <- watson2test(subset(ind.data$TimeRad,
+                            ind.data$Species == input$"1name1" &
+                              ind.data$Site %in% input$"1site1" &
+                              ind.data$Season %in% input$"1season1"),
+                     subset(ind.data$TimeRad,
+                            ind.data$Species == input$"1name1" &
+                              ind.data$Site %in% input$"1site2" &
+                              ind.data$Season %in% input$"1season2"))
+    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Single species confidence interval
@@ -352,7 +341,7 @@ function(input, output) {
                                            ind.data$Season %in% input$"mseason2"))
   )})
   output$"mwatson" <- renderUI({
-    wresult <- watson2(subset(ind.data$TimeRad,
+    U2 <- watson2(subset(ind.data$TimeRad,
                               ind.data$Species == input$"mname1" &
                                 ind.data$Site %in% input$"msite1" &
                                 ind.data$Season %in% input$"mseason1"),
@@ -360,15 +349,15 @@ function(input, output) {
                               ind.data$Species == input$"mname2" &
                                 ind.data$Site %in% input$"msite2" &
                                 ind.data$Season %in% input$"mseason2"))
-    if (wresult$Reject == TRUE) {
-      div(HTML(
-        paste0("Reject the null hypothesis. ", input$"mname1", " and ", input$"mname2", " have <b>significantly different</b> activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    } else if (wresult$Reject == FALSE) {
-      div(HTML(
-        paste0("Do not reject the null hypothesis. ", input$"mname1", " and ", input$"mname2", " do <b>not</b> have significantly different activity patterns. U<sup>2</sup> is equal to ", round(wresult$U2, digits = 4), ".")
-      ))
-    }
+    p <- watson2test(subset(ind.data$TimeRad,
+                            ind.data$Species == input$"mname1" &
+                              ind.data$Site %in% input$"msite1" &
+                              ind.data$Season %in% input$"mseason1"),
+                     subset(ind.data$TimeRad,
+                            ind.data$Species == input$"mname2" &
+                              ind.data$Site %in% input$"msite2" &
+                              ind.data$Season %in% input$"mseason2"))
+    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Manual confidence interval

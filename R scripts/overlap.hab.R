@@ -1,6 +1,8 @@
 ##Comparing every species between lowland and cloud forests
 require(overlap)
 
+source("R scripts/watson2.function.R")
+
 #Setup and preallocation
 namelist <- names(table(ind.data$Species))
 dimensions <- length(namelist)
@@ -14,16 +16,17 @@ for (i in 1:dimensions) {
   animal2 <- subset(ind.data$TimeRad, ind.data$Species == name1 & ind.data$Habitat == "Cloud Forest")
   
   #Small sample size estimator
-  if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 15) {
+  if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 18) {
     boot1 <- resample(animal1, n.boot)
     boot2 <- resample(animal2, n.boot)
     
     ovl.orig <- overlapEst(animal1, animal2, adjust=c(0.8, NA, NA))[1]
     ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
+    wresult <- watson2(animal1, animal2)
     
     #Writing results to list
     ovl.boot.ci <- bootCI(ovl.orig, ovl.boot)
-    hab.list[[namelist[i]]] <- c(estimate=ovl.orig, lower=ovl.boot.ci[4,1], upper=ovl.boot.ci[4,2], nLow=length(animal1), nCloud=length(animal2))
+    hab.list[[namelist[i]]] <- c(estimate=ovl.orig, lower=ovl.boot.ci[4,1], upper=ovl.boot.ci[4,2], nLow=length(animal1), nCloud=length(animal2), U2=wresult$U2, RejectNullHypothesis=wresult$Reject)
     
   #Large sample size estimator
   } else if (min(length(animal1), length(animal2)) > 75) {
@@ -32,12 +35,13 @@ for (i in 1:dimensions) {
     
     ovl.orig <- overlapEst(animal1, animal2, adjust=c(NA, 1, NA))[2]
     ovl.boot <- bootEst(boot1, boot2, adjust=c(NA, 1, NA))[,2]
+    wresult <- watson2(animal1, animal2)
     
     #Writing results to list
     ovl.boot.ci <- bootCI(ovl.orig, ovl.boot)
-    hab.list[[namelist[i]]] <- c(estimate=ovl.orig, lower=ovl.boot.ci[4,1], upper=ovl.boot.ci[4,2], nLow=length(animal1), nCloud=length(animal2))
+    hab.list[[namelist[i]]] <- c(estimate=ovl.orig, lower=ovl.boot.ci[4,1], upper=ovl.boot.ci[4,2], nLow=length(animal1), nCloud=length(animal2), U2=wresult$U2, RejectNullHypothesis=wresult$Reject)
   } else {
-    hab.list[[namelist[i]]] <- c(estimate=NA, lower=NA, upper=NA, nLow=length(animal1), nCloud=length(animal2))
+    hab.list[[namelist[i]]] <- c(estimate=NA, lower=NA, upper=NA, nLow=length(animal1), nCloud=length(animal2), U2=NA, RejectNullHypothesis=NA)
     print("Sample size too small to analyze.")
   }
 }

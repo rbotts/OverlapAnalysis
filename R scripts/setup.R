@@ -12,22 +12,44 @@ ind.data <- subset(ind.data, ind.data$Species != "")
 ind.data["Date"] <- as.Date(ind.data$Date, "%m/%d/%Y")
 max.time <- max(ind.data$Time)
 if (max.time > 12 & max.time <= 24) {
-  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+  ind.data["TimeRad"] <- as.numeric(ind.data$Time)*2*pi/24
 } else if (max.time <= 1) {
-  ind.data["TimeRad"] <- ind.data$Time*2*pi
+  ind.data["TimeRad"] <- as.numeric(ind.data$Time)*2*pi
 } else print("Unknown time format.")
 ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*", "", ind.data$Survey.Name)
-ind.data["Season"] <- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
+ind.data["Season"] <- ifelse(grepl("Spring", ind.data$Survey.Name),
+                             "Spring",
+                             ifelse(grepl("Summer", ind.data$Survey.Name),
+                                    "Summer",
+                                    ifelse(grepl("Fall", ind.data$Survey.Name),
+                                           "Fall",
+                                           "Other"
+                                           )
+                                    )
+                             )
 
-#ind.data["Coyote"] <- ifelse(grepl("\\s*Bosque de Agua\\s*|\\s*Campanario\\s*|\\s*Copal\\s*|\\s*PNLC\\s*|\\s*PN Carara\\s*|\\s*Carara\\s*|\\s*PNC\\s*", ind.data$Site), TRUE, FALSE) #Only for exploratory coyote study, not necessary for sampledata.csv
+#ind.data["Coyote"] <- ifelse(grepl("\\s*Bosque de Agua\\s*|\\s*Campanario\\s*|\\s*Copal\\s*|\\s*PNLC\\s*|\\s*PN Carara\\s*|\\s*Carara\\s*|\\s*PNC\\s*", ind.data$Site), TRUE, FALSE) #Only for exploratory coyote study; not necessary for sampledata.csv
 
 #Grouping for our full data set; not necessary for sampledata.csv
 ind.data["Site"] <- gsub("\\s*York Univ\\s*", "ASBC", ind.data$Site)
 ind.data["Site"] <- gsub("\\s*Copal\\s*|\\s*Marta\\s*", "Pejibaye", ind.data$Site) #Comment out during exploratory coyote study
 ind.data["Site"] <- gsub("\\s*PN Carara\\s*|\\s*Carara\\s*", "PNC", ind.data$Site)
 ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
-ind.data$Habitat[ind.data$Site == "Savegre Valley"|ind.data$Site == "Chirripo"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "PNT"|ind.data$Site == "Pejibaye"] <- "Cloud Forest"
-ind.data$Habitat[ind.data$Site == "PNC"|ind.data$Site == "PNLC"|ind.data$Site == "CB"|ind.data$Site == "Campanario"|ind.data$Site == "ASBC"] <- "Lowland Forest"
+ind.data$Habitat[ind.data$Site == "Savegre Valley" |
+                   ind.data$Site == "Chirripo" |
+                   ind.data$Site == "Bosque de Agua" |
+                   ind.data$Site == "PNT" |
+                   ind.data$Site == "Pejibaye"] <- "Cloud Forest"
+ind.data$Habitat[ind.data$Site == "PNC" |
+                   ind.data$Site == "PNLC" |
+                   ind.data$Site == "CB" |
+                   ind.data$Site == "Campanario" |
+                   ind.data$Site == "ASBC"] <- "Lowland Forest"
+
+ind.data$CamNumber1 <- gsub(pattern = " O-", replacement = "", x = ind.data$CamNumber1, fixed = TRUE)
+ind.data$CamNumber1 <- gsub(pattern = " O+", replacement = "", x = ind.data$CamNumber1, fixed = TRUE)
+ind.data$CamNumber2 <- gsub(pattern = " O-", replacement = "", x = ind.data$CamNumber2, fixed = TRUE)
+ind.data$CamNumber2 <- gsub(pattern = " O+", replacement = "", x = ind.data$CamNumber2, fixed = TRUE)
 
 print(table(ind.data$Species))
 print(table(ind.data$Site))
