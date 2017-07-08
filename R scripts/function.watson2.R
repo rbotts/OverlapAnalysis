@@ -61,8 +61,3 @@ watson2p <- function(U2, N) { #Function to approxiate the p-value of Watson's U-
   p <- pchisq(q = chi, df = f, lower.tail = FALSE) #Approximating from chi-squared distribution
   return(p)
 }
-
-x1 <- c(40,45,50,55,70,80,80,95,105,110,110,120)
-y1 <- c(30,35,50,60,65,65,75,80, 90,100)
-x2 <- c(35,45,50,55,60,70,85,95,105,120)
-y2 <- c(75,80,90,100,110,130,135,140,150,155,165)
