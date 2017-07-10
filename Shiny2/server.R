@@ -145,7 +145,7 @@ function(input, output) {
       )
     })
     
-    #Manual UI
+    #Manual UI (Site)
     output$"manUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       sitelist <<- names(table(ind.data$Site))
@@ -172,6 +172,38 @@ function(input, output) {
           ),
           column(3,
                  checkboxGroupInput(inputId = "mseason2", label = paste("Second species's seasons:"), choices = seasonlist, selected = seasonlist)
+          )
+        )
+      )
+    })
+    
+    #Manual UI (Survey)
+    output$"manUI2" <- renderUI({
+      namelist <<- names(table(ind.data$Species))
+      surveylist <<- names(table(ind.data$Survey.Name))
+      seasonlist <<- names(table(ind.data$Season))
+      
+      div(
+        fluidRow(
+          column(3,
+                 selectInput(inputId = "m2name1", label = "Choose the first species:", choices = namelist)
+          ),
+          column(3, offset = 3,
+                 selectInput(inputId = "m2name2", label = "Choose the second species:", choices = namelist) 
+          )
+        ),
+        fluidRow(
+          column(3,
+                 checkboxGroupInput(inputId = "m2survey1", label = paste("First species's surveys:"), choices = surveylist, selected = surveylist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "m2season1", label = paste("First species's seasons:"), choices = seasonlist, selected = seasonlist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "m2survey2", label = paste("Second species's surveys:"), choices = surveylist, selected = surveylist)
+          ),
+          column(3,
+                 checkboxGroupInput(inputId = "m2season2", label = paste("Second species's seasons:"), choices = seasonlist, selected = seasonlist)
           )
         )
       )
@@ -314,7 +346,7 @@ function(input, output) {
     )
   })
   
-  #Manual overlap plot
+  #Manual overlap plot (Site)
   output$"movlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -360,7 +392,7 @@ function(input, output) {
     div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
-  #Manual confidence interval
+  #Manual confidence interval (Site)
   CIvaluem <- eventReactive(eventExpr = input$"mbootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
@@ -379,6 +411,74 @@ function(input, output) {
   output$"mbootText" <- renderUI({
     HTML(
       paste0("<b>", CIvaluem()["estimate"], "</b>", ", ", CIvaluem()["lower"], ", ", CIvaluem()["upper"])
+    )
+  })
+  
+  #Manual overlap plot (Survey)
+  output$"movlplot2" <- renderPlot({
+    overlapPlot(
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"m2name1" &
+               ind.data$Survey.Name %in% input$"m2survey1" &
+               ind.data$Season %in% input$"m2season1"),
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"m2name2" &
+               ind.data$Survey.Name %in% input$"m2survey2" &
+               ind.data$Season %in% input$"m2season2"),
+      main=paste("Overlap between", input$"m2name1", "and", input$"m2name2")
+    )
+    legend("top", legend = c(input$"m2name1", input$"m2name2"), col=c("black", "blue"), lty=c(1,2))
+  })
+  output$"movln2" <- renderText({paste(
+    input$"m2name1", "n =", length(subset(ind.data$TimeRad,
+                                          ind.data$Species == input$"m2name1" &
+                                            ind.data$Survey.Name %in% input$"m2survey1" &
+                                            ind.data$Season %in% input$"m2season1")),
+    ";",
+    input$"m2name2", "n =", length(subset(ind.data$TimeRad,
+                                          ind.data$Species == input$"m2name2" &
+                                            ind.data$Survey.Name %in% input$"m2survey2" &
+                                            ind.data$Season %in% input$"m2season2"))
+  )})
+  output$"mwatson2" <- renderUI({
+    U2 <- watson2(subset(ind.data$TimeRad,
+                         ind.data$Species == input$"m2name1" &
+                           ind.data$Survey.Name %in% input$"m2survey1" &
+                           ind.data$Season %in% input$"m2season1"),
+                  subset(ind.data$TimeRad,
+                         ind.data$Species == input$"m2name2" &
+                           ind.data$Survey.Name %in% input$"m2survey2" &
+                           ind.data$Season %in% input$"m2season2"))
+    p <- watson2test(subset(ind.data$TimeRad,
+                            ind.data$Species == input$"m2name1" &
+                              ind.data$Survey.Name %in% input$"m2survey1" &
+                              ind.data$Season %in% input$"m2season1"),
+                     subset(ind.data$TimeRad,
+                            ind.data$Species == input$"m2name2" &
+                              ind.data$Survey.Name %in% input$"m2survey2" &
+                              ind.data$Season %in% input$"m2season2"))
+    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
+  })
+  
+  #Manual confidence interval (Survey)
+  CIvaluem2 <- eventReactive(eventExpr = input$"mbootButton2", valueExpr = {
+    overlapCI(
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"m2name1" &
+               ind.data$Survey.Name %in% input$"m2survey1" &
+               ind.data$Season %in% input$"m2season1"),
+      subset(ind.data$TimeRad,
+             ind.data$Species == input$"m2name2" &
+               ind.data$Survey.Name %in% input$"m2survey2" &
+               ind.data$Season %in% input$"m2season2"),
+      input$"mn.boot2"*1000
+    )
+  }
+  )
+  
+  output$"mbootText2" <- renderUI({
+    HTML(
+      paste0("<b>", CIvaluem2()["estimate"], "</b>", ", ", CIvaluem2()["lower"], ", ", CIvaluem2()["upper"])
     )
   })
 }
