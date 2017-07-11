@@ -20,7 +20,7 @@ rao.space.U <- function(x) { #Generates the U statistic in degrees. Input x must
   fi <- x[order(x)]
   fi1 <- c(fi[-1], 0)
   Ti <- fi1 - fi #Calculates the distance between each point after being sorted
-  Ti[n] <- (p-fi[n])+fi[1] #Calculates the distance between first and last point, to account for "wrap" at edge of circular distribution
+  Ti[n] <- (360-fi[n])+fi[1] #Calculates the distance between first and last point, to account for "wrap" at edge of circular distribution
   
   U <- 0.5*sum(abs(Ti-lambda))
   return(U)

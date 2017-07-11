@@ -1,0 +1,47 @@
+#Shiny app for lunar analysis
+require(shiny)
+
+fluidPage(
+  titlePanel("Lunar Analysis"),
+  tabsetPanel(
+    #Upload tab
+    tabPanel(title = "Upload Data",
+             fluidRow(column(8,
+                             HTML("
+                                  <h4>Uploaded files must be in csv format. Each row represents an observation, and the following columns must be present:</h4>
+                                  <ul>
+                                  <li>\"<b>Independent</b>\", with a value of \"Yes\" indicating that the observation is independent of others (to prevent autocorrelation).</li>
+                                  <li>\"<b>Species</b>\", which holds the <i><u>species name</u></i> of the animal in the observation. Blank, \"unknown\", and \"Unknown\" values will be removed automatically.</li>
+                                  <li>\"<b>Date</b>\", which holds the date on which the photograph was taken, in the format \"mm/dd/yyyy\".</li>
+  <li>\"<b>Survey.Name</b>\", which contains the <u>site</u>, the <u>year</u> (optional, but must be in 20xx format if present), and the <u>season</u> in which the study took place (e.g: Site1 Summer 2017, Site3 Fall 2010, Spring 2008 Site5).</li>
+</ul>
+<i>Note: Files with the filename \"MooringActivityRawData2.csv\" may behave somewhat strangely due to some data grouping functions that are hard-coded into the app. If you do not use that name for your file, it will act normally.</i>
+<br>
+<br>The source code for this app is available <u><a href=\"https://github.com/rbotts/OverlapAnalysis\">here</a></u> on Github.
+             ")
+             ),
+             column(4,
+                    wellPanel(
+                      fileInput(inputId = "updata", label = "Upload your own data to use with the webapp:", accept = ".csv"),
+                      div("Once the file has finished uploading, press the button below:"),
+                      actionButton(inputId = "dataButton", label="Generate dataset from uploaded file")
+                    )
+             )
+             )
+    ),
+    tabPanel(title="Pattern Analysis",
+      fluidRow(
+        column(4, uiOutput("patternSelect")),
+        column(8,
+          fluidRow(plotOutput("patternGraph")),
+          fluidRow(
+            div(style = "height:20px"),
+            textOutput("patternN"),
+            div(style = "height:20px"),
+            uiOutput("patternRao")
+          )
+        )
+      )
+    )
+  )
+)
