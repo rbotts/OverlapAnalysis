@@ -8,3 +8,6 @@ Overlap analysis is a method for quantifying how much overlap exists between two
 * The R scripts folder mostly contains R programs that can perform overlap analysis on a data set and output bulk results rather than one at a time. It may be helpful for providing additional examples of how to use the overlap package in R.
 
 * The Shiny2 folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/shiny2/. That app has most of the functionality of the scripts found here, with a more beginner-friendly graphical interface. However, it can only calculate a single overlap coefficient (and associated 95% confidence interval) at a time.
+
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
