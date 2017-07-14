@@ -9,7 +9,7 @@ Overlap analysis is a method for quantifying how much overlap exists between two
 
 * The Shiny2 folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/shiny2/. That app has most of the functionality of the scripts found here, with a more beginner-friendly graphical interface. However, it can only calculate a single overlap coefficient (and associated 95% confidence interval) at a time.
 
-* The ShinyLunar folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/ShinyLunar/. That app is built to many of the same overlap statistics that can be done by Shiny2 and the other scripts here, but it uses the phase of the moon as the independent time variable (x-axis).
+* The ShinyLunar folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/ShinyLunar/. That app is built to calculate many of the same overlap statistics that can be done by Shiny2 and the other scripts here, but it uses the phase of the moon as the independent time variable (x-axis).
 
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
