@@ -76,9 +76,9 @@ watson2test <- function(x, y) { #Function to approximate the p-value of Watson's
   return(p)
 }
 
-#=========================== Server function ==================================
+#Server Function ----
 function(input, output) {
-  #Generate dataset from uploaded file
+  #Generate dataset ----
   observeEvent(eventExpr = input$dataButton, handlerExpr = {
     ind.data <<- read.table(file = tail((input$updata)$datapath, n=1), header=TRUE, sep=",", stringsAsFactors=FALSE)
     ind.data <<- subset(ind.data, ind.data["Independent"] ==  "Yes")
@@ -102,7 +102,7 @@ function(input, output) {
       ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
     }
     
-    #Two species UI
+    #Two species UI ----
     output$"2speciesUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       sitelist <<- names(table(ind.data$Site))
@@ -116,7 +116,7 @@ function(input, output) {
       )
     })
     
-    #One species UI
+    #One species UI ----
     output$"1speciesUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       sitelist <<- names(table(ind.data$Site))
@@ -145,7 +145,7 @@ function(input, output) {
       )
     })
     
-    #Manual UI (Site)
+    #Manual UI (Site) ----
     output$"manUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       sitelist <<- names(table(ind.data$Site))
@@ -177,7 +177,7 @@ function(input, output) {
       )
     })
     
-    #Manual UI (Survey)
+    #Manual UI (Survey) ----
     output$"manUI2" <- renderUI({
       namelist <<- names(table(ind.data$Species))
       surveylist <<- names(table(ind.data$Survey.Name))
@@ -211,7 +211,7 @@ function(input, output) {
     
   })
   
-  #Two species plot
+  #Two species plot ----
   output$"2ovlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -257,7 +257,7 @@ function(input, output) {
     div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
-  #Two species confidence interval
+  #Two species CI ----
   CIvalue2 <- eventReactive(eventExpr = input$"2bootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
@@ -279,7 +279,7 @@ function(input, output) {
     )
   })
   
-  #Single species plot
+  #Single species plot ----
   output$"1ovlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -324,7 +324,7 @@ function(input, output) {
     div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
-  #Single species confidence interval
+  #Single species CI ----
   CIvalue1 <- eventReactive(eventExpr = input$"1bootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
@@ -346,7 +346,7 @@ function(input, output) {
     )
   })
   
-  #Manual overlap plot (Site)
+  #Manual plot (Site) ----
   output$"movlplot" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -392,7 +392,7 @@ function(input, output) {
     div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
-  #Manual confidence interval (Site)
+  #Manual CI (Site) ----
   CIvaluem <- eventReactive(eventExpr = input$"mbootButton", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
@@ -414,7 +414,7 @@ function(input, output) {
     )
   })
   
-  #Manual overlap plot (Survey)
+  #Manual plot (Survey) ----
   output$"movlplot2" <- renderPlot({
     overlapPlot(
       subset(ind.data$TimeRad,
@@ -460,7 +460,7 @@ function(input, output) {
     div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
-  #Manual confidence interval (Survey)
+  #Manual CI (Survey) ----
   CIvaluem2 <- eventReactive(eventExpr = input$"mbootButton2", valueExpr = {
     overlapCI(
       subset(ind.data$TimeRad,
