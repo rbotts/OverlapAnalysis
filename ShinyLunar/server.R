@@ -96,13 +96,10 @@ function(input, output) {
     ind.data["Site"] <<- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*", "", ind.data$Survey.Name)
     ind.data["Season"] <<- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
     
-    #Grouping for our data set; hopefully no users call their data file "MooringActivityRawData2.csv"
-    if (tail((input$updata)$name, n=1) == "MooringActivityRawData2.csv") {
-      ind.data["Site"] <- gsub("\\s*York Univ\\s*", "ASBC", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*Copal\\s*|\\s*Marta\\s*", "Pejibaye", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*PN Carara\\s*|\\s*Carara\\s*", "PNC", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
-    }
+    #Remove daytime data ----
+    observeEvent(eventExpr = input$nocturnalButton, handlerExpr = {
+      ind.data <<- subset(ind.data, ind.data$Time > 18/24 | ind.data$Time < 6/24)
+    })
     
     #Pattern Analysis UI ----
     #* Pattern Select ----
