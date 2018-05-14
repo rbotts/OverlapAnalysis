@@ -5,7 +5,7 @@ require(overlap)
 fluidPage(
   titlePanel("Overlap Analysis"),
   tabsetPanel(
-    #Upload tab
+    #Upload tab ----
     tabPanel(title = "Upload Data",
       fluidRow(column(8,
         HTML("
@@ -16,7 +16,6 @@ fluidPage(
   <li>\"<b>Time</b>\", which holds the time of day at which the photograph was taken, in decimal format, out of either 24 hours (e.g: 11:59pm -> 23.98) or 1 day (e.g: 11:59pm -> 0.99).</li>
   <li>\"<b>Survey.Name</b>\", which contains the <u>site</u>, the <u>year</u> (optional, but must be in 20xx format if present), and the <u>season</u> in which the study took place (e.g: Site1 Summer 2017, Site3 Fall 2010, Spring 2008 Site5).</li>
 </ul>
-<i>Note: Files with the filename \"MooringActivityRawData2.csv\" may behave somewhat strangely due to some data grouping functions that are hard-coded into the app. If you do not use that name for your file, it will act normally.</i>
 <br>
 <br>The source code for this app is available <u><a href=\"https://github.com/rbotts/OverlapAnalysis\">here</a></u> on Github.
              ")
@@ -24,14 +23,16 @@ fluidPage(
       column(4,
         wellPanel(
           fileInput(inputId = "updata", label = "Upload your own data to use with the webapp:", accept = ".csv"),
-          div("Once the file has finished uploading, press the button below:"),
-          actionButton(inputId = "dataButton", label="Generate dataset from uploaded file")
-        )
+          div("Once the file has finished uploading, press the button below in order to import the data into the app:"),
+          fluidRow(column(12, align = "center",
+                          actionButton(inputId = "dataButton",
+                                       label = "Generate dataset",
+                                       width = "100%")
+        ))
       )
-      )
-    ),
+    ))),
     
-    #Two species tab
+    #Two species tab ----
     tabPanel(title = "Two Species by Site and Season",
       fluidRow(column(3,
                       wellPanel(
@@ -56,7 +57,7 @@ fluidPage(
       )
     ),
     
-    #Single species tab
+    #Single species tab ----
     tabPanel(title = "One Species by Site and Season",
       wellPanel(
         uiOutput("1speciesUI")
@@ -80,7 +81,7 @@ fluidPage(
       )
     ),
     
-    #Manual tab
+    #Manual tab ----
     tabPanel(title = "Manual Selection (Site)",
       fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarily statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
       wellPanel(
@@ -105,7 +106,7 @@ fluidPage(
       )
     ),
     
-    #Manual Survey tab
+    #Manual Survey tab ----
     tabPanel(title = "Manual Selection (Survey)",
              fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarily statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
              wellPanel(

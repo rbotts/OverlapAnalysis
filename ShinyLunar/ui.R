@@ -24,9 +24,19 @@ fluidPage(
              column(4,
                     wellPanel(
                       fileInput(inputId = "updata", label = "Upload your own data to use with the webapp:", accept = ".csv"),
-                      div("Once the file has finished uploading, press the button below:"),
-                      actionButton(inputId = "dataButton", label="Generate dataset from uploaded file"),
-                      actionButton(inputId = "nocturnalButton", label = "Remove daytime data (0600 to 1800)")
+                      div("Once the file has finished uploading, press the button below in order to import the data into the app:"),
+                      fluidRow(column(12, align = "center",
+                                      actionButton(inputId = "dataButton",
+                                                   label = "Generate dataset",
+                                                   width = "100%")
+                      )),
+                      div(style = "height:20px"),
+                      div("After generating the dataset, optionally press the button below in order to use only data from after 1800 and before 0600:"),
+                      fluidRow(column(12, align = "center",
+                                      actionButton(inputId = "nocturnalButton",
+                                                   label = "Remove daytime data",
+                                                   width = "100%")
+                      ))
                     )
              )
              )
