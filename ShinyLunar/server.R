@@ -2,6 +2,8 @@
 require(shiny)
 require(overlap)
 require(suncalc)
+size.fileupload <- 64 #Max file size that can be uploaded is this many MB
+options(shiny.maxRequestSize = size.fileupload*1024^2)
 
 #Overlap Functions ----
 overlapCI <- function(animal1, animal2, n.boot) {
@@ -190,14 +192,16 @@ function(input, output) {
             checkboxGroupInput(
               label = "Choose the surveys to include for the first species:",
               inputId = "overlapSurvey1a",
-              choices = surveylist[1:L]
+              choices = surveylist[1:L],
+              selected = surveylist[1:L]
             )
           ),
           column(3,
             checkboxGroupInput(
               label = "Choose the surveys to include for the first species (continued):",
               inputId = "overlapSurvey1b",
-              choices = surveylist[-(1:L)]
+              choices = surveylist[-(1:L)],
+              selected = surveylist[-(1:L)]
             )
           ),
           column(3,
@@ -209,14 +213,16 @@ function(input, output) {
             checkboxGroupInput(
               label = "Choose the surveys to include for the second species:",
               inputId = "overlapSurvey2a",
-              choices = surveylist[1:L]
+              choices = surveylist[1:L],
+              selected = surveylist[1:L]
             )
           ),
           column(3,
             checkboxGroupInput(
               label = "Choose the surveys to include for the second species (continued):",
               inputId = "overlapSurvey2b",
-              choices = surveylist[-(1:L)]
+              choices = surveylist[-(1:L)],
+              selected = surveylist[-(1:L)]
             )
           )
         )

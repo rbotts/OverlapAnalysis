@@ -4,7 +4,7 @@ require(shiny)
 fluidPage(
   titlePanel("Lunar Analysis"),
   tabsetPanel(
-    #Upload tab
+    #Upload tab ----
     tabPanel(title = "Upload Data",
              fluidRow(column(8, HTML(
                                "
@@ -30,6 +30,7 @@ fluidPage(
              )
              )
     ),
+    #Pattern Analysis tab ----
     tabPanel(title="Pattern Analysis",
       fluidRow(
         column(4, uiOutput("patternSelect")),
@@ -44,6 +45,7 @@ fluidPage(
         )
       )
     ),
+    #Lunar Overlap tab ----
     tabPanel(title="Lunar Overlap",
              fluidRow(column(12, HTML("<h4><font color=\"darkred\">Warning: This tab allows users to make comparisons that are not necessarily statistically meaningful. Make sure that your study design is valid before using this tab!</font></h4>"))),
              fluidRow(

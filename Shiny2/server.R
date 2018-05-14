@@ -1,6 +1,8 @@
 ##Shiny server script
 require(shiny)
 require(overlap)
+size.fileupload <- 64 #Max file size that can be uploaded is this many MB
+options(shiny.maxRequestSize = size.fileupload*1024^2)
 
 #Declaring confidence interval function, for easy calling later.
 overlapCI <- function(animal1, animal2, n.boot) {
@@ -94,14 +96,6 @@ function(input, output) {
     ind.data["Site"] <<- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*", "", ind.data$Survey.Name)
     ind.data["Season"] <<- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
     
-    #Grouping for our data set; hopefully no users call their data file "MooringActivityRawData2.csv"
-    if (tail((input$updata)$name, n=1) == "MooringActivityRawData2.csv") {
-      ind.data["Site"] <- gsub("\\s*York Univ\\s*", "ASBC", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*Copal\\s*|\\s*Marta\\s*", "Pejibaye", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*PN Carara\\s*|\\s*Carara\\s*", "PNC", ind.data$Site)
-      ind.data["Site"] <- gsub("\\s*Tapanti\\s*|\\s*Via Mills\\s*|\\s*Villa Mills\\s*", "PNT", ind.data$Site)
-    }
-    
     #Two species UI ----
     output$"2speciesUI" <- renderUI({
       namelist <<- names(table(ind.data$Species))
@@ -109,10 +103,24 @@ function(input, output) {
       seasonlist <<- names(table(ind.data$Season))
       
       div(
-        selectInput(inputId = "2name1", label="Choose the first species:", choices=namelist),
-        selectInput(inputId = "2name2", label="Choose the second species:", choices=namelist),
-        checkboxGroupInput(inputId = "2sites", label="Filter by site(s)", choices=sitelist, selected=sitelist),
-        checkboxGroupInput(inputId = "2seasons", label="Filter by season(s)", choices=seasonlist, selected=seasonlist)
+        selectInput(inputId = "2name1",
+                    label = "Choose the first species:",
+                    choices = namelist),
+        selectInput(inputId = "2name2",
+                    label = "Choose the second species:",
+                    choices = namelist),
+        checkboxGroupInput(
+          inputId = "2sites",
+          label = "Filter by site(s)",
+          choices = sitelist,
+          selected = sitelist
+        ),
+        checkboxGroupInput(
+          inputId = "2seasons",
+          label = "Filter by season(s)",
+          choices = seasonlist,
+          selected = seasonlist
+        )
       )
     })
     
@@ -122,27 +130,47 @@ function(input, output) {
       sitelist <<- names(table(ind.data$Site))
       seasonlist <<- names(table(ind.data$Season))
       
-      div(
-        fluidRow(
-          column(3,
-                 selectInput(inputId = "1name1", label = "Choose the species of interest:", choices = namelist)
+      div(fluidRow(column(3,
+        selectInput(
+          inputId = "1name1",
+          label = "Choose the species of interest:",
+          choices = namelist
+        )
+      )),
+      fluidRow(
+        column(3,
+          checkboxGroupInput(
+            inputId = "1site1",
+            label = "Group A's sites:",
+            choices = sitelist,
+            selected = sitelist
           )
         ),
-        fluidRow(
-          column(3,
-                 checkboxGroupInput(inputId = "1site1", label = "Group A's sites:", choices = sitelist, selected = sitelist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "1season1", label = "Group A's seasons:", choices = seasonlist, selected = seasonlist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "1site2", label = "Group B's sites:", choices = sitelist, selected = sitelist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "1season2", label = "Group B's seasons:", choices = seasonlist, selected = seasonlist)
+        column(3,
+          checkboxGroupInput(
+            inputId = "1season1",
+            label = "Group A's seasons:",
+            choices = seasonlist,
+            selected = seasonlist
+          )
+        ),
+        column(3,
+          checkboxGroupInput(
+            inputId = "1site2",
+            label = "Group B's sites:",
+            choices = sitelist,
+            selected = sitelist
+          )
+        ),
+        column(3,
+          checkboxGroupInput(
+            inputId = "1season2",
+            label = "Group B's seasons:",
+            choices = seasonlist,
+            selected = seasonlist
           )
         )
-      )
+      ))
     })
     
     #Manual UI (Site) ----
@@ -154,24 +182,53 @@ function(input, output) {
       div(
         fluidRow(
           column(3,
-                 selectInput(inputId = "mname1", label = "Choose the first species:", choices = namelist)
+            selectInput(
+              inputId = "mname1",
+              label = "Choose the first species:",
+              choices = namelist
+            )
           ),
-          column(3, offset = 3,
-            selectInput(inputId = "mname2", label = "Choose the second species:", choices = namelist) 
+          column(3,
+            offset = 3,
+            selectInput(
+              inputId = "mname2",
+              label = "Choose the second species:",
+              choices = namelist
+            )
           )
         ),
         fluidRow(
           column(3,
-                 checkboxGroupInput(inputId = "msite1", label = paste("First species's sites:"), choices = sitelist, selected = sitelist)
+            checkboxGroupInput(
+              inputId = "msite1",
+              label = paste("First species's sites:"),
+              choices = sitelist,
+              selected = sitelist
+            )
           ),
           column(3,
-                 checkboxGroupInput(inputId = "mseason1", label = paste("First species's seasons:"), choices = seasonlist, selected = seasonlist)
+            checkboxGroupInput(
+              inputId = "mseason1",
+              label = paste("First species's seasons:"),
+              choices = seasonlist,
+              selected = seasonlist
+            )
           ),
           column(3,
-                 checkboxGroupInput(inputId = "msite2", label = paste("Second species's sites:"), choices = sitelist, selected = sitelist)
+            checkboxGroupInput(
+              inputId = "msite2",
+              label = paste("Second species's sites:"),
+              choices = sitelist,
+              selected = sitelist
+            )
           ),
           column(3,
-                 checkboxGroupInput(inputId = "mseason2", label = paste("Second species's seasons:"), choices = seasonlist, selected = seasonlist)
+            checkboxGroupInput(
+              inputId = "mseason2",
+              label = paste("Second species's seasons:"),
+              choices = seasonlist,
+              selected = seasonlist
+            )
           )
         )
       )
@@ -183,30 +240,55 @@ function(input, output) {
       surveylist <<- names(table(ind.data$Survey.Name))
       seasonlist <<- names(table(ind.data$Season))
       
-      div(
-        fluidRow(
-          column(3,
-                 selectInput(inputId = "m2name1", label = "Choose the first species:", choices = namelist)
-          ),
-          column(3, offset = 3,
-                 selectInput(inputId = "m2name2", label = "Choose the second species:", choices = namelist) 
+      div(fluidRow(column(3,
+        selectInput(
+          inputId = "m2name1",
+          label = "Choose the first species:",
+          choices = namelist
+        )
+      ),
+      column(3,
+        offset = 3,
+        selectInput(
+          inputId = "m2name2",
+          label = "Choose the second species:",
+          choices = namelist
+        )
+      )),
+      fluidRow(
+        column(3,
+          checkboxGroupInput(
+            inputId = "m2survey1",
+            label = paste("First species's surveys:"),
+            choices = surveylist,
+            selected = surveylist
           )
         ),
-        fluidRow(
-          column(3,
-                 checkboxGroupInput(inputId = "m2survey1", label = paste("First species's surveys:"), choices = surveylist, selected = surveylist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "m2season1", label = paste("First species's seasons:"), choices = seasonlist, selected = seasonlist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "m2survey2", label = paste("Second species's surveys:"), choices = surveylist, selected = surveylist)
-          ),
-          column(3,
-                 checkboxGroupInput(inputId = "m2season2", label = paste("Second species's seasons:"), choices = seasonlist, selected = seasonlist)
+        column(3,
+          checkboxGroupInput(
+            inputId = "m2season1",
+            label = paste("First species's seasons:"),
+            choices = seasonlist,
+            selected = seasonlist
+          )
+        ),
+        column(3,
+          checkboxGroupInput(
+            inputId = "m2survey2",
+            label = paste("Second species's surveys:"),
+            choices = surveylist,
+            selected = surveylist
+          )
+        ),
+        column(3,
+          checkboxGroupInput(
+            inputId = "m2season2",
+            label = paste("Second species's seasons:"),
+            choices = seasonlist,
+            selected = seasonlist
           )
         )
-      )
+      ))
     })
     
   })
