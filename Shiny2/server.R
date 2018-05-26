@@ -4,6 +4,7 @@ require(overlap)
 size.fileupload <- 64 #Max file size that can be uploaded is this many MB
 options(shiny.maxRequestSize = size.fileupload*1024^2)
 
+#Utility functions ----
 #Declaring confidence interval function, for easy calling later.
 overlapCI <- function(animal1, animal2, n.boot) {
   ovl <- c()
@@ -77,6 +78,81 @@ watson2test <- function(x, y) { #Function to approximate the p-value of Watson's
   p <- pchisq(q = chi, df = f, lower.tail = FALSE) #Approximating from chi-squared distribution
   return(p)
 }
+
+#Declaring W statistic functions, for easy calling later
+w.stat <- function(...) {
+  #Function to calculate W statistic from 2 or more vectors of data (in RADIANS)
+  
+  #Data input and organization
+  dataList <- list(...)
+  unData <- data.frame(Point = sort(unlist(dataList)))
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  r <- length(n) #r is the number of vectors input
+  
+  #Linear Rank ----
+  unData["Rank"] <- 1:N
+  for (i in 1:N) {
+    whenSame <- unData$Point == unData$Point[i] #Create logical vector of which points of unData$Point are the same as a given point
+    numSame <- sum(whenSame) #How many times does this value appear?
+    
+    if (numSame > 1) { #If a value appears more than once...
+      unData$Rank[whenSame] <- rep(mean(unData$Rank[whenSame]), times = numSame) #...every point with that value should take the average Rank
+    }
+  }
+  
+  unData["Uniform"] <- 2 * pi * unData$Rank / N #Circular Rank, a.k.a: "Uniform Score"
+  
+  #Calculating W ----
+  C <- S <- rep(0, times = length(n)) #Preallocate values
+  for (i in 1:length(n)) {
+    for (j in 1:n[i]) {
+      rankOrder <- unData$Uniform[unData$Point == dataList[[i]][j]]
+      rankOrder <- mean(rankOrder) #mean() condenses rankOrder to a single value if vector
+      C[i] <- C[i] + cos(rankOrder)
+      S[i] <- S[i] + sin(rankOrder)
+    }
+  }
+  
+  W <- 2 * sum((C^2 + S^2)/n)
+  return(W)
+}
+
+w.prob <- function(..., trials = 10000, randomize = FALSE) {
+  #Function to calculate p-value of the W statistic of given 2+ vectors of data (in RADIANS)
+  
+  #Data input ----
+  dataList <- list(...)
+  W0 <- do.call(what = w.stat, args = dataList) #W statistic of actual data
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  r <- length(n) #r is the number of vectors input
+  
+  if(randomize | min(n) < 10) {
+    #Randomization test ----
+    randW <- rep(x = NA, times = trials) #Preallocate result vector
+    
+    for (i in 1:trials) {
+      randList <- list()
+      randDat <- sample(x = unlist(dataList), size = N, replace = FALSE) #Randomly resample points for each data vector from total population without replacement
+      for (j in 1:r) {
+        if (j == 1) randList[[1]] <- randDat[1:n[j]] #The first "new" data vector has n[1] points
+        else {
+          nStart <- length(unlist(randList))
+          randList[[j]] <- randDat[(nStart+1):(nStart+n[j])] #The j'th "new" data vector has n[j] points
+        }
+      }
+      randW[i] <- do.call(what = w.stat, args = randList) #Once all "new" data vectors constructed, calculate W of "new" dataset and store it in the randW vector
+    }
+    sortW <- sort(randW) #Arrange W statistics from randomization in ascending order
+    p <- which.min(abs(sortW-W0)) #Figure out where W0 fits into the randomized distribution
+    return(c("W" = W0, "p-value" = 1-(p/trials))) #p-value = the fraction of trials that gave a W greater than W0
+  }
+  else {
+    return(c("W" = W0, "p-value" = pchisq(q = W0, df = 2*r - 2, lower.tail = FALSE))) #Approximate with Chi-square
+  }
+}
+
 
 #Server Function ----
 function(input, output) {
@@ -319,24 +395,19 @@ function(input, output) {
                                                 ind.data$Site %in% input$"2sites" &
                                                 ind.data$Season %in% input$"2seasons"))
   )})
-  output$"2watson" <- renderUI({
-    U2 <- watson2(subset(ind.data$TimeRad,
-                              ind.data$Species == input$"2name1" &
-                                ind.data$Site %in% input$"2sites" &
-                                ind.data$Season %in% input$"2seasons"),
-                       subset(ind.data$TimeRad,
-                              ind.data$Species == input$"2name2" &
-                                ind.data$Site %in% input$"2sites" &
-                                ind.data$Season %in% input$"2seasons"))
-    p <- watson2test(subset(ind.data$TimeRad,
+  output$"2W" <- renderUI({
+    W <- w.prob(subset(ind.data$TimeRad,
                             ind.data$Species == input$"2name1" &
                               ind.data$Site %in% input$"2sites" &
                               ind.data$Season %in% input$"2seasons"),
                      subset(ind.data$TimeRad,
                             ind.data$Species == input$"2name2" &
                               ind.data$Site %in% input$"2sites" &
-                              ind.data$Season %in% input$"2seasons"))
-    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
+                              ind.data$Season %in% input$"2seasons"),
+                trials = 1000)
+    U2 <- W[1]
+    p <- W[2]
+    div(HTML(paste0("Uniform scores test W statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Two species CI ----
@@ -386,24 +457,19 @@ function(input, output) {
                                    ind.data$Site %in% input$"1site2" &
                                    ind.data$Season %in% input$"1season2"))
   )})
-  output$"1watson" <- renderUI({
-    U2 <- watson2(subset(ind.data$TimeRad,
-                                ind.data$Species == input$"1name1" &
-                                ind.data$Site %in% input$"1site1" &
-                                ind.data$Season %in% input$"1season1"),
-                       subset(ind.data$TimeRad,
-                                ind.data$Species == input$"1name1" &
-                                ind.data$Site %in% input$"1site2" &
-                                ind.data$Season %in% input$"1season2"))
-    p <- watson2test(subset(ind.data$TimeRad,
+  output$"1W" <- renderUI({
+    W <- w.prob(subset(ind.data$TimeRad,
                             ind.data$Species == input$"1name1" &
                               ind.data$Site %in% input$"1site1" &
                               ind.data$Season %in% input$"1season1"),
                      subset(ind.data$TimeRad,
                             ind.data$Species == input$"1name1" &
                               ind.data$Site %in% input$"1site2" &
-                              ind.data$Season %in% input$"1season2"))
-    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
+                              ind.data$Season %in% input$"1season2"),
+                trials = 1000)
+    U2 <- W[1]
+    p <- W[2]
+    div(HTML(paste0("Uniform scores test W statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Single species CI ----
@@ -454,24 +520,19 @@ function(input, output) {
                                            ind.data$Site %in% input$"msite2" &
                                            ind.data$Season %in% input$"mseason2"))
   )})
-  output$"mwatson" <- renderUI({
-    U2 <- watson2(subset(ind.data$TimeRad,
-                              ind.data$Species == input$"mname1" &
-                                ind.data$Site %in% input$"msite1" &
-                                ind.data$Season %in% input$"mseason1"),
-                       subset(ind.data$TimeRad,
-                              ind.data$Species == input$"mname2" &
-                                ind.data$Site %in% input$"msite2" &
-                                ind.data$Season %in% input$"mseason2"))
-    p <- watson2test(subset(ind.data$TimeRad,
+  output$"mW" <- renderUI({
+    W <- w.prob(subset(ind.data$TimeRad,
                             ind.data$Species == input$"mname1" &
                               ind.data$Site %in% input$"msite1" &
                               ind.data$Season %in% input$"mseason1"),
                      subset(ind.data$TimeRad,
                             ind.data$Species == input$"mname2" &
                               ind.data$Site %in% input$"msite2" &
-                              ind.data$Season %in% input$"mseason2"))
-    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
+                              ind.data$Season %in% input$"mseason2"),
+                trials = 1000)
+    U2 <- W[1]
+    p <- W[2]
+    div(HTML(paste0("Uniform scores test W statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Manual CI (Site) ----
@@ -522,24 +583,19 @@ function(input, output) {
                                             ind.data$Survey.Name %in% input$"m2survey2" &
                                             ind.data$Season %in% input$"m2season2"))
   )})
-  output$"mwatson2" <- renderUI({
-    U2 <- watson2(subset(ind.data$TimeRad,
-                         ind.data$Species == input$"m2name1" &
-                           ind.data$Survey.Name %in% input$"m2survey1" &
-                           ind.data$Season %in% input$"m2season1"),
-                  subset(ind.data$TimeRad,
-                         ind.data$Species == input$"m2name2" &
-                           ind.data$Survey.Name %in% input$"m2survey2" &
-                           ind.data$Season %in% input$"m2season2"))
-    p <- watson2test(subset(ind.data$TimeRad,
+  output$"mW2" <- renderUI({
+    W <- w.prob(subset(ind.data$TimeRad,
                             ind.data$Species == input$"m2name1" &
                               ind.data$Survey.Name %in% input$"m2survey1" &
                               ind.data$Season %in% input$"m2season1"),
                      subset(ind.data$TimeRad,
                             ind.data$Species == input$"m2name2" &
                               ind.data$Survey.Name %in% input$"m2survey2" &
-                              ind.data$Season %in% input$"m2season2"))
-    div(HTML(paste0("Watson's U<sup>2</sup> statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
+                              ind.data$Season %in% input$"m2season2"),
+                trials = 1000)
+    U2 <- W[1]
+    p <- W[2]
+    div(HTML(paste0("Uniform scores test W statistic is ", round(U2, digits = 4), " with an estimated p-value of ", p, ".")))
   })
   
   #Manual CI (Survey) ----
