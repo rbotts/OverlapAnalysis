@@ -10,6 +10,6 @@ xy <- function(x, y) {
 }
 
 #Adding Longitude and Latitude columns to ind.data
-xy.dat <- xy(x = ind.data$X, y = ind.data$Y)
-ind.data <- cbind(ind.data, xy.dat)
-space <- SpatialPoints(coords = xy.dat, proj4string = "+proj=longlat +ellps=WGS84")
+# xy.dat <- xy(x = ind.data$X, y = ind.data$Y)
+# ind.data <- cbind(ind.data, xy.dat)
+# space <- SpatialPoints(coords = xy.dat, proj4string = "+proj=longlat +ellps=WGS84")

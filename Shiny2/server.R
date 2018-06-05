@@ -158,7 +158,7 @@ w.prob <- function(..., trials = 10000, randomize = FALSE) {
 function(input, output) {
   #Generate dataset ----
   observeEvent(eventExpr = input$dataButton, handlerExpr = {
-    ind.data <<- read.table(file = tail((input$updata)$datapath, n=1), header=TRUE, sep=",", stringsAsFactors=FALSE)
+    ind.data <<- read.table(file = input$updata$datapath, header=TRUE, sep=",", stringsAsFactors=FALSE)
     ind.data <<- subset(ind.data, ind.data["Independent"] ==  "Yes")
     ind.data <<- subset(ind.data, ind.data$Species != "Unknown")
     ind.data <<- subset(ind.data, ind.data$Species != "unknown")
