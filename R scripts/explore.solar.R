@@ -26,48 +26,50 @@ if (max.time > 12 & max.time <= 24) {
 } else print("Unknown time format.")
 
 #Get Solar data
-solarTime <- function(dat) {
-  #Loosely based on sunTime function from package "overlap"
-  #
+solarTime <- function(dat, tzone = timeZone) {
   #inputs: 'dat' is a data.frame with the following columns: "date" (the POSIXct date), "lat" (the Latitude), "lon" (the Longitude), "time" (the time of day in RADIANS)
   #ouptuts: 'solar' is a vector of "solar times" (in RADIANS) where (1/2)pi is sunrise and (3/2)pi is sunset
   
   
   #Get sunrise and sunset as date-time objects
-  sunData <- getSunlightTimes(data = dat, keep = c("sunrise", "sunset"), tz = timeZone)
+  sunData <- getSunlightTimes(data = dat, keep = c("sunrise", "sunset"), tz = tzone)
   sunRise <- sunData$sunrise
   sunSet <- sunData$sunset
   
   #Get sunrise and sunset as fraction of a day (start is forced to 00:00:00 UTC that day, end is appropriate solar event forced to UTC)
-  sunRise <- time_length(interval(start = ymd_hms(paste(as.Date(sunRise), "00:00:00")),
-                                  end = force_tz(time = sunRise, tzone = "UTC")),
+  sunRise <- time_length(interval(start = ymd_hms(paste(date(sunRise), "00:00:00"), tz = tzone),
+                                  end = force_tz(time = sunRise, tzone = tzone)),
                          unit = "day")
-  sunSet <- time_length(interval(start = ymd_hms(paste(as.Date(sunSet), "00:00:00")),
-                                 end = force_tz(time = sunSet, tzone = "UTC")),
+  sunSet <- time_length(interval(start = ymd_hms(paste(date(sunSet), "00:00:00"), tz = tzone),
+                                 end = force_tz(time = sunSet, tzone = tzone)),
                         unit = "day")
+  # plot(sunRise, ylim = c(0,1), pch = ".")
+  # plot(sunSet, ylim = c(0,1), pch = ".")
   
   #Convert sunrise/sunset to radians
   sunRise <- sunRise * 2 * pi
   sunSet <- sunSet * 2 * pi
+  # plot(sunRise, ylim = c(0, 2*pi), pch=".")
+  # plot(sunSet, ylim = c(0,2*pi), pch=".")
   
-  #Converting clock times to solar times
-  clockTime <- dat["time"]
-  solar <- ifelse(
-    test = (clockTime <= sunRise), #is it before sunrise
-    
-    #scale pre-dawn times to lie between 0 and (1/2)pi
-    yes = (clockTime / sunRise) * (1/2) * pi,
-    
-    no = ifelse(
-      test = (clockTime <= sunSet), #is it between sunrise and sunset?
-      
-      #scale daylight times to lie between (1/2pi) and (3/2)pi
-      yes = (((clockTime - sunRise) / (sunSet - sunRise)) * pi) + ((1/2) * pi),
-      
-      #scale post-dusk times to lie between (3/2)pi and 2pi
-      no =  (((clockTime - sunSet) / ((2 * pi) - sunSet)) * (1/2) * pi) + (3/2) * pi
-    )
-  )
+  clockTime <- dat[["time"]]
+  solar <- rep(NA, times = length(clockTime))
+  
+  for (i in 1:length(clockTime)) {
+    if (clockTime[i] <= sunRise[i]) {
+      solar[i] <- ((1/2)*pi) * (clockTime[i]/sunRise[i])
+    } else if (clockTime[i] <= sunSet[i]) {
+      solar[i] <- (((clockTime[i] - sunRise[i])/(sunSet[i] - sunRise[i]))*pi) + ((1/2)*pi)
+    } else {
+      solar[i] <- (((clockTime[i] - sunSet[i])/((2*pi) - sunSet[i]))*(1/2)*pi) + ((3/2)*pi)
+    }
+  }
+  
+  # solar <- ifelse(
+  #   test = solar < 0,
+  #   yes = (2*pi - solar),
+  #   no = solar
+  # )
   
   return(solar)
 }

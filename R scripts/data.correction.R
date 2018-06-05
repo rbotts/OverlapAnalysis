@@ -24,7 +24,7 @@ raw.data$Site[raw.data$Site == "Chirripo-"] <- "Chirripo"
 raw.data$Site[raw.data$Site == "Bosque de Agua-"] <- "Bosque de Agua"
 
 #Individual Cameras ----
-source("R scripts/xy.R")
+source("R scripts/function.xy.R")
 raw.data <- cbind(raw.data, xy(x = raw.data$X, y = raw.data$Y))
 
 raw.data$Longitude[raw.data$CamNumber1 == "13"] <- -83.7838825778
