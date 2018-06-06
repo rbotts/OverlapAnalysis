@@ -1,5 +1,5 @@
 # OverlapAnalysis
-This repository contains a sample data set and some R code for performing Overlap Analysis on it.
+This repository contains a sample data set and some R code for performing Overlap Analysis on it, as well as the source code for three apps written with R Shiny. The two oldest, "Shiny2" and "ShinyLunar" are deprecated, replaced by "Starshiny".
 
 Overlap analysis is a method for quantifying how much overlap exists between two density curves. In an ecological context, we can use it to compare the daily patterns of activity in two groups of animals, such as comparing between different species or even between different populations of the same species. Our research data comes from camera trap studies performed on mammals in the lowland and cloud forests of Costa Rica.
 
