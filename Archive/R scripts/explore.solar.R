@@ -30,7 +30,6 @@ solarTime <- function(dat, tzone = timeZone) {
   #inputs: 'dat' is a data.frame with the following columns: "date" (the POSIXct date), "lat" (the Latitude), "lon" (the Longitude), "time" (the time of day in RADIANS)
   #ouptuts: 'solar' is a vector of "solar times" (in RADIANS) where (1/2)pi is sunrise and (3/2)pi is sunset
   
-  
   #Get sunrise and sunset as date-time objects
   sunData <- getSunlightTimes(data = dat, keep = c("sunrise", "sunset"), tz = tzone)
   sunRise <- sunData$sunrise
@@ -57,19 +56,13 @@ solarTime <- function(dat, tzone = timeZone) {
   
   for (i in 1:length(clockTime)) {
     if (clockTime[i] <= sunRise[i]) {
-      solar[i] <- ((1/2)*pi) * (clockTime[i]/sunRise[i])
+      solar[i] <- ((1/2)*pi) * (clockTime[i]/sunRise[i]) #Predawn observations
     } else if (clockTime[i] <= sunSet[i]) {
-      solar[i] <- (((clockTime[i] - sunRise[i])/(sunSet[i] - sunRise[i]))*pi) + ((1/2)*pi)
+      solar[i] <- (((clockTime[i] - sunRise[i])/(sunSet[i] - sunRise[i]))*pi) + ((1/2)*pi) #Daylight observations
     } else {
-      solar[i] <- (((clockTime[i] - sunSet[i])/((2*pi) - sunSet[i]))*(1/2)*pi) + ((3/2)*pi)
+      solar[i] <- (((clockTime[i] - sunSet[i])/((2*pi) - sunSet[i]))*(1/2)*pi) + ((3/2)*pi) #Postdusk observations
     }
   }
-  
-  # solar <- ifelse(
-  #   test = solar < 0,
-  #   yes = (2*pi - solar),
-  #   no = solar
-  # )
   
   return(solar)
 }
