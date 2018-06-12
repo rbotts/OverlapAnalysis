@@ -21,8 +21,8 @@ instructions <-
       <li>\"Date\", which holds the <u>date</u> on which the observation took place, in m/d/YYYY format. </li>
       <li>\"Survey.Name\", which contains the <u>site</u> at which the study took place. Note that season names (\"Spring\", \"Summer\", \"Autumn\", \"Fall\", \"Winter\") and numbers (e.g: 2018) will be removed such that surveys can be grouped by name. For example, \"Site1 Summer 2017\", \"Site2 Fall 2010\", \"Spring 2008 Site1\", and \"Site2 2015 Autumn\" would be considered to come from \"Site1\", \"Site2\", \"Site1\", and \"Site2\", respectively. </li>
       <li>\"Independent\", with a value of \"Yes\" indicating that the observation is independent of others (to prevent autocorrelation). Rows with anything other than \"Yes\" in this column will be ignored. </li>
-      <li>\"X\", which holds the X coordinate of the observation when projected to UTM Zone 17N on WGS84 (EPSG:32617). </li>
-      <li>\"Y\", which holds the Y coordinate of the observation when projected to UTM Zone 17N on WGS84 (EPSG:32617). </li>
+      <li>\"Longitude\", which holds the geographic Longitude of the observation in decimal degrees. </li>
+      <li>\"Latitude\", which holds the geographic Latitude of the observation in decimal degrees. </li>
     </ol>
   </li>
   
@@ -52,7 +52,6 @@ colText <- "deep-orange darken-1"
 material_page(
   title = "Starshiny: Overlap Analysis with R Shiny",
   nav_bar_color = colText,
-  include_fonts = TRUE,
   
   material_tabs(
     tabs = c("Upload Data" = "upload",
@@ -94,6 +93,19 @@ material_page(
         material_card(
           title = "Global Options",
           
+          #One/Two Species Mode
+          material_row(
+            material_column(
+              width = 12, align = "center",
+              material_switch(input_id = "speciesNumber",
+                              label = NULL,
+                              off_label = "One Species",
+                              on_label = "Two Species",
+                              initial_value = TRUE,
+                              color = colHex)
+            )
+          ),
+          
           #Mode selection radio buttons
           HTML("<p style = \"color:#9e9e9e\"> What would you like to use as your (x-axis) independent variable?"),
           material_radio_button(
@@ -105,35 +117,27 @@ material_page(
             color = colHex
           ),
           
-          #Number of species selction radio
-          HTML("<br> <p style = \"color:#9e9e9e\"> How many species would you like to analyze?"),
-          material_radio_button(
-            input_id = "numberSpecies",
-            label = NULL,
-            choices = c("One" = 1,
-                        "Two" = 2),
-            color = colHex
-          ),
-          
           #Species selection dropdown box(es)
           uiOutput(outputId = "speciesSelect")
         )
       ),
-      
       #Second/Third column(s), Filtration UI
-      uiOutput(outputId = "filterUI")
+      material_column(
+        width = 8,
+        uiOutput(outputId = "filterUI")
+      )
     ),
     material_row(
       
       #Plot column/card
       material_column(
-        width = 8,
-        material_card(
-          title = NULL,
-          plotOutput(outputId = "overlapPlot",
-                     width = "100%",
-                     height = "480px")
-        )
+        width = 8
+        # material_card(
+        #   title = NULL,
+        #   plotOutput(outputId = "overlapPlot",
+        #              width = "100%",
+        #              height = "480px")
+        # )
       ),
       
       #Data output column
