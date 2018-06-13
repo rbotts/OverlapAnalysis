@@ -2,7 +2,7 @@
 #Converting "Clock Time" to "Solar Time"
 #ind.data must have a column for time ("TimeRad" -- in RADIANS) and columns for Longitude and Latitude, respectively
 
-source("R scripts/data.correction.R") #Creates the raw.data object
+source("Archive/R scripts/data.correction.R") #Creates the raw.data object
 
 #Required packages
 require("overlap")
