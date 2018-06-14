@@ -21,14 +21,19 @@ instructions <-
       <li>\"Date\", which holds the <u>date</u> on which the observation took place, in m/d/YYYY format. </li>
       <li>\"Survey.Name\", which contains the <u>site</u> at which the study took place. Note that season names (\"Spring\", \"Summer\", \"Autumn\", \"Fall\", \"Winter\") and numbers (e.g: 2018) will be removed such that surveys can be grouped by name. For example, \"Site1 Summer 2017\", \"Site2 Fall 2010\", \"Spring 2008 Site1\", and \"Site2 2015 Autumn\" would be considered to come from \"Site1\", \"Site2\", \"Site1\", and \"Site2\", respectively. </li>
       <li>\"Independent\", with a value of \"Yes\" indicating that the observation is independent of others (to prevent autocorrelation). Rows with anything other than \"Yes\" in this column will be ignored. </li>
-      <li>\"Longitude\", which holds the geographic Longitude of the observation in decimal degrees. </li>
-      <li>\"Latitude\", which holds the geographic Latitude of the observation in decimal degrees. </li>
+      <li>\"Longitude\", which holds the <u>geographic longitude</u> of the observation in <b>decimal degrees</b>. </li>
+      <li>\"Latitude\", which holds the <u>geographic latitude</u> of the observation in <b>decimal degrees</b>. </li>
     </ol>
   </li>
   
-  <li>Click the \"Data Analysis\" tab at the top of this page. </li>
+  <li>Click the \"Data Analysis\" tab at the top of the page. </li>
 
-  <li>There will be 3 columns on that page. The first (leftmost) column contains the largest-scale, global options. These include the ability to select the independent variable to use for the analysis (explained below), the number of species to analyze (1 or 2), and which species to analyze. The second (and third, for two-group comparisons) column(s) give the ability to filter the data sets by species, site, and month.</li>
+  <li>There will be two rows on that page, with three columns in the first row and two columns in the second.
+    <ol>
+      <li>The first (top-left) column contains the largest-scale, global options. These include the ability to select the number of species to analyze (1 or 2), the independent variable to use for the analysis (explained below), whether to throw out certain groups of data <i>(e.g: daytime data)</i>, and which species to analyze.</li>
+      <li>The second and third columns give the ability to filter the data sets by site and month.</li>
+      <li>The lower row will have a plot on the left, and two cards on the right. The top card will have basic analytics about the data. The sample size for each species will be shown, and, if analyzing in two-species comparison mode, some statistics regarding the degree of overlap or similarity between the two species.</li>
+  </li>
 </ol>
 
 <br>
@@ -40,8 +45,11 @@ instructions <-
   <li>\"Solar Time\", which converts the clock time to a \"Solar Time\" (expressed in terms of the sunrise and sunset) that is used for all analyses. </li>
   <li>\"Moon Phase\", which uses the phase of the moon (calculated based on the date of the observation), rather than a time of day, for all analyses. </li>
 </ol>
+
 <br>
+
 <br>
+
 The source code for this app is available <u><a href=\"https://github.com/rbotts/OverlapAnalysis\">here</a></u> on Github.
 "}
 
@@ -99,8 +107,8 @@ material_page(
               width = 12, align = "center",
               material_switch(input_id = "speciesNumber",
                               label = NULL,
-                              off_label = "One Species",
-                              on_label = "Two Species",
+                              off_label = "Only A",
+                              on_label = "A vs B",
                               initial_value = TRUE,
                               color = colHex)
             )
@@ -111,9 +119,24 @@ material_page(
           material_radio_button(
             input_id = "modeSelect",
             label = NULL,
-            choices = c("Clock Time" = "clock",
-                        "Solar Time" = "solar",
-                        "Moon Phase" = "lunar"),
+            choices = c("Clock Time" = "TimeRad",
+                        "Solar Time" = "Solar",
+                        "Moon Phase" = "Lunar"),
+            color = colHex
+          ),
+          
+          #Choose data to ignore
+          HTML("<p style = \"color:#9e9e9e\"> What data should be thrown out?"),
+          material_checkbox(
+            input_id = "removeDay",
+            label = "Ignore daylight data (after sunrise, before sunset)",
+            initial_value = FALSE,
+            color = colHex
+          ),
+          material_checkbox(
+            input_id = "removeNight",
+            label = "Ignore nighttime data (after sunset, before sunrise)",
+            initial_value = FALSE,
             color = colHex
           ),
           
@@ -131,13 +154,8 @@ material_page(
       
       #Plot column/card
       material_column(
-        width = 8
-        # material_card(
-        #   title = NULL,
-        #   plotOutput(outputId = "overlapPlot",
-        #              width = "100%",
-        #              height = "480px")
-        # )
+        width = 8,
+        uiOutput(outputId = "plotCard")
       ),
       
       #Data output column
@@ -145,10 +163,7 @@ material_page(
         width = 4,
         
         #Basic Analysis card
-        material_card(
-          title = "Analysis...",
-          uiOutput(outputId = "overlapResults")
-        ),
+        uiOutput(outputId = "analysisCard"),
         
         #Confidence Interval card
         material_card(

@@ -17,8 +17,11 @@ colText <- "deep-orange darken-1"
 
 #Utility Functions ----
 solarTime <- function(dat, tzone = "America/Costa_Rica") {
-  #inputs: 'dat' is a data.frame with the following columns: "date" (the POSIXct date), "lat" (the Latitude), "lon" (the Longitude), "time" (the time of day in RADIANS)
-  #ouptuts: 'solar' is a vector of "solar times" (in RADIANS) where (1/2)pi is sunrise and (3/2)pi is sunset
+  #' Convert "clock times" to "solar times" based on the date and location at which the "clock times" were measured.
+  #'
+  #' Generate a vector of solar times (in radians), where (1/2)pi is sunrise and (3/2)pi is sunset.
+  #' @param dat Data.frame. Contains four columns: "date" (the POSIXct date), "lat" (the Latitude), "lon" (the Longitude), "time" (the time of day in RADIANS)
+  #' @param tzone String. The time zone. Use `OlsonNames()` to see the list of all supported on your system.
   
   #Get sunrise and sunset as date-time objects
   sunData <- getSunlightTimes(data = dat, keep = c("sunrise", "sunset"), tz = tzone)
@@ -70,8 +73,8 @@ materialCheckboxGroupWrite <- function(idBase, choices, initials, color, evaluat
   
   #Color will be recycled if it is not long enough
   if (length(color) != nBoxes) {
+    if (length(color) > 1) warning("Length of color input not the same as number of choices. Color vector will be recycled to match.")
     color <- rep(color, length.out = nBoxes)
-    warning("Length of color input not the same as number of choices. Color vector recycled to match.")
   }
   
   #Initials will be recycled if it is not long enough
@@ -99,8 +102,23 @@ materialCheckboxGroupWrite <- function(idBase, choices, initials, color, evaluat
   if (evaluate) return(lapply(output, function(x) eval(parse(text = x)))) else return(output)
 }
 
+materialCheckboxGroupRead <- function(idBase, choices) {
+  #' Get a character vector containing the names for the data stored by a group input made with materialCheckboxGroupWrite. Use something like `lapply(output, function(x) eval(parse(text = x)))` in a reactive context to actually read the values.
+  #' 
+  #' Get names for the data stored by a group input made with materialCheckboxGroupWrite.
+  #' @param idBase String. The idBase used in the original materialCheckboxGroupWrite call.
+  #' @param choices The character vector used in the original materialCheckboxGroupWrite call, giving the labels for each checkbox.
+  
+  output <- c()
+  for (i in 1:length(choices)) {
+    output[i] <- paste0("input$", idBase, i)
+  }
+  
+  return(output)
+}
+
 #Server function ----
-function(input, output) {
+function(input, output, session) {
   
   #Upload raw.dat ----
   raw.dat <- reactive({
@@ -112,6 +130,9 @@ function(input, output) {
   
   #Clean raw.dat ----
   clean.dat <- reactive({
+    #Show a loading spinner during processing
+    material_spinner_show(session = session, output_id = "speciesSelect")
+    
     #Import only independent data
     cleanFrame <- raw.dat()
     cleanFrame <- subset(cleanFrame, cleanFrame$Independent == "Yes")
@@ -133,6 +154,9 @@ function(input, output) {
     dateFormat = "%m/%d/%Y"
     cleanFrame$Date <- base::as.Date(cleanFrame$Date, format = dateFormat)
     
+    #Adding a month column
+    cleanFrame$Month <- month(cleanFrame$Date)
+    
     #Adding a solar column
     sunData <- data.frame(
       "date" = cleanFrame$Date,
@@ -144,6 +168,9 @@ function(input, output) {
     
     #Adding a lunar column
     cleanFrame["Lunar"] <- (getMoonIllumination(cleanFrame$Date, "phase")[,2])*2*pi
+    
+    #Hide the loading spinner when processing is complete
+    material_spinner_hide(session = session, output_id = "speciesSelect")
     
     return(cleanFrame)
   })
@@ -189,42 +216,170 @@ function(input, output) {
   })
   
   #Filter UI ----
-  output$filterUI <- renderUI({
-      material_row(
+  output$filterUI <- renderUI(
+    if (input$speciesNumber) {
+    material_row(
         #Filter for species A
         material_column(
           width = 6,
           material_card(
             title = "Filter Species A",
-            HTML("<p style = \"color:#9e9e9e\"> Sites to include?"),
-            materialCheckboxGroupWrite(idBase = "siteA",
-                                       choices = siteListA(),
-                                       color = colHex),
-            
-            HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
-            materialCheckboxGroupWrite(idBase = "monthsA",
-                                       choices = 1:12,
-                                       color = colHex)
+            uiOutput(outputId = "selectSiteA"),
+            uiOutput(outputId = "selectMonthA")
           )
         ),
-        
-        #Filter for species B
         material_column(
           width = 6,
           material_card(
             title = "Filter Species B",
-            HTML("<p style = \"color:#9e9e9e\"> Sites to include?"),
-            materialCheckboxGroupWrite(idBase = "siteB",
-                                       choices = siteListA(),
-                                       color = colHex),
-            
-            HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
-            materialCheckboxGroupWrite(idBase = "monthsB",
-                                       choices = 1:12,
-                                       color = colHex)
+            uiOutput(outputId = "filterB")
           )
         )
+    )
+    } else {
+      material_card(
+        title = "Filter Species A",
+        material_row(
+          material_column(width = 6, uiOutput(outputId = "selectSiteA")),
+          material_column(width = 6, uiOutput(outputId = "selectMonthA"))
+        )
       )
+  }
+  )
+  
+  #Filter A ----
+  output$selectSiteA <- renderUI({
+    div(
+      HTML("<p style = \"color:#9e9e9e\"> Sites to include?"),
+      materialCheckboxGroupWrite(idBase = "siteA",
+                                 choices = siteListA(),
+                                 color = colHex)
+    )
+  })
+  output$selectMonthA <- renderUI({
+    div(
+      HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
+      materialCheckboxGroupWrite(idBase = "monthsA",
+                                 choices = 1:12,
+                                 color = colHex)
+    )
+  })
+  
+  #Filter B ----
+  output$filterB <- renderUI({
+    div(
+      HTML("<p style = \"color:#9e9e9e\"> Sites to include?"),
+      materialCheckboxGroupWrite(idBase = "siteB",
+                                 choices = siteListB(),
+                                 color = colHex),
+      
+      HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
+      materialCheckboxGroupWrite(idBase = "monthsB",
+                                 choices = 1:12,
+                                 color = colHex)
+    )
+  })
+  
+  #Filter outputs ----
+  siteA <- reactive({
+    nameList <- materialCheckboxGroupRead(idBase = "siteA", choices = siteListA())
+    valueList <- unlist(lapply(nameList, function(x) try(eval(parse(text = x)))))
+    return(valueList)
+  })
+  monthsA <- reactive({
+    nameList <- materialCheckboxGroupRead(idBase = "monthsA", choices = 1:12)
+    valueList <- unlist(lapply(nameList, function(x) try(eval(parse(text = x)))))
+    return(valueList)
+  })
+  siteB <- reactive({
+    nameList <- materialCheckboxGroupRead(idBase = "siteB", choices = siteListB())
+    valueList <- unlist(lapply(nameList, function(x) try(eval(parse(text = x)))))
+    return(valueList)
+  })
+  monthsB <- reactive({
+    nameList <- materialCheckboxGroupRead(idBase = "monthsB", choices = 1:12)
+    valueList <- unlist(lapply(nameList, function(x) try(eval(parse(text = x)))))
+    return(valueList)
+  })
+  
+  #Data subsets ----
+  a.dat <- reactive({
+    cleanFrame <- clean.dat()
+    cleanFrame <- subset(cleanFrame[[input$modeSelect]],
+                         cleanFrame$Species == input$speciesA &
+                           cleanFrame$Site %in% siteListA()[siteA()] &
+                           cleanFrame$Month %in% (1:12)[monthsA()]
+                         )
+    return(cleanFrame)
+  })
+  b.dat <- reactive({
+    cleanFrame <- clean.dat()
+    cleanFrame <- subset(cleanFrame[[input$modeSelect]],
+                         cleanFrame$Species == input$speciesB &
+                           cleanFrame$Site %in% siteListB()[siteB()] &
+                           cleanFrame$Month %in% (1:12)[monthsB()]
+    )
+    return(cleanFrame)
+  })
+  
+  #Plot Card ----
+  output$plotCard <- renderUI({
+    if (input$speciesNumber) {
+      material_card(
+        title = paste("Overlap between", input$speciesA, "and", input$speciesB),
+        plotOutput(outputId = "abPlot", height = "640px")
+      )
+    }
+    else {
+      material_card(
+        title = paste("Activity Pattern of", input$speciesA),
+        plotOutput(outputId = "aPlot", height = "640px")
+      )
+    }
+  })
+  output$abPlot <- renderPlot({
+    overlapPlot(A = a.dat(),
+                B = b.dat(),
+                xscale = NA,
+                xaxt="n",
+                main = NULL)
+    
+    if (input$modeSelect == "TimeRad") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("00:00", "06:00", "12:00", "18:00", "24:00")
+      )
+    }
+    if (input$modeSelect == "Solar") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("Midnight", "Sunrise", "Noon", "Sunset", "Midnight")
+      )
+    }
+    if (input$modeSelect == "Lunar") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon")
+      )
+    }
+  })
+  output$aPlot <- renderPlot({
+    #Needs work
+  })
+  
+  #Analysis UI ----
+  output$analysisCard <- renderUI({
+    material_card(
+      title = "Analysis",
+      HTML(paste0("<p style = \"color:#9e9e9e\"> <i><b>", input$speciesA, ":</b></i> n = ", length(a.dat()))),
+      uiOutput(outputId = "nB")
+    )
+  })
+  output$nB <- renderUI(if (input$speciesNumber) {
+    HTML(paste0("<p style = \"color:#9e9e9e\"> <i><b>", input$speciesB, ":</b></i> n = ", length(b.dat())))
   })
   
   #Debug button ----
