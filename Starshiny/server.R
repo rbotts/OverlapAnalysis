@@ -7,7 +7,6 @@ require("shinymaterial")
 require("overlap")
 require("suncalc")
 require("lubridate")
-require("proj4") 
 size.fileupload <- 256 #Max file size that can be uploaded is this many MB
 options(shiny.maxRequestSize = size.fileupload*1024^2)
 
