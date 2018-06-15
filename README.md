@@ -18,5 +18,7 @@ This folder contains a sample data set (sampledata.csv), some sample plots, some
 ### Starshiny
 This folder contains the source code for a web app that will be available online when finished. The app should offer all the functionality of the scripts in the "Archive/R Scripts" folder, but with an intuitive graphical interface. Note that it can only calculate one set of values at a time, so writing a more complex script to run directly in R may be preferable for bulk data analysis.
 
+### StatisticFunctions
+This folder contains R scripts for performing several different statistical analyses on two-or-more-sample circular data sets.
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.

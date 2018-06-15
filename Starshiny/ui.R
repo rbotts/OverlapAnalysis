@@ -93,6 +93,8 @@ material_page(
   #Data Analysis tab ----
   material_tab_content(
     tab_id = "analysis",
+    
+    #*First Row ----
     material_row(
       
       #First column, "global options"
@@ -100,58 +102,15 @@ material_page(
         width = 4,
         material_card(
           title = "Global Options",
-          
-          #One/Two Species Mode
-          material_row(
-            material_column(
-              width = 12, align = "center",
-              material_switch(input_id = "speciesNumber",
-                              label = NULL,
-                              off_label = "Only A",
-                              on_label = "A vs B",
-                              initial_value = TRUE,
-                              color = colHex)
-            )
-          ),
-          
-          #Mode selection radio buttons
-          HTML("<p style = \"color:#9e9e9e\"> What would you like to use as your (x-axis) independent variable?"),
-          material_radio_button(
-            input_id = "modeSelect",
-            label = NULL,
-            choices = c("Clock Time" = "TimeRad",
-                        "Solar Time" = "Solar",
-                        "Moon Phase" = "Lunar"),
-            color = colHex
-          ),
-          
-          #Choose data to ignore
-          HTML("<p style = \"color:#9e9e9e\"> What data should be thrown out?"),
-          material_checkbox(
-            input_id = "removeDay",
-            label = "Ignore daylight data (after sunrise, before sunset)",
-            initial_value = FALSE,
-            color = colHex
-          ),
-          material_checkbox(
-            input_id = "removeNight",
-            label = "Ignore nighttime data (after sunset, before sunrise)",
-            initial_value = FALSE,
-            color = colHex
-          ),
-          
-          #Species selection dropdown box(es)
-          uiOutput(outputId = "speciesSelect")
+          material_row(uiOutput(outputId = "globalUI"))
         )
       ),
-      #Second/Third column(s), Filtration UI
-      material_column(
-        width = 8,
-        uiOutput(outputId = "filterUI")
-      )
+      #Second/Third column(s), Filtering UI
+      material_column(width = 8, uiOutput(outputId = "filterUI"))
     ),
+    
+    #*Second Row ----
     material_row(
-      
       #Plot column/card
       material_column(
         width = 8,

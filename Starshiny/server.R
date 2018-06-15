@@ -128,10 +128,59 @@ function(input, output, session) {
     } else read.csv(file = input$dataFile$datapath, header = TRUE, stringsAsFactors = FALSE)
   })
   
+  #Global UI ----
+  output$globalUI <- renderUI({
+    div(
+      #One/Two species switch
+      material_column(
+        width = 12, align = "center",
+        material_switch(input_id = "speciesNumber",
+                        label = NULL,
+                        off_label = "Only A",
+                        on_label = "A vs B",
+                        initial_value = TRUE,
+                        color = colHex)
+      ),
+      
+      #Rest of the global UI
+      material_column(
+        width = 12,
+        #Mode selection radio buttons
+        HTML("<p style = \"color:#9e9e9e\"> What would you like to use as your (x-axis) independent variable?"),
+        material_radio_button(
+          input_id = "modeSelect",
+          label = NULL,
+          choices = c("Clock Time" = "TimeRad",
+                      "Solar Time" = "Solar",
+                      "Moon Phase" = "Lunar"),
+          color = colHex
+        ),
+        
+        #Choose data to ignore
+        HTML("<p style = \"color:#9e9e9e\"> What data should be thrown out?"),
+        material_checkbox(
+          input_id = "removeDay",
+          label = "Ignore daylight data (after sunrise, before sunset)",
+          initial_value = FALSE,
+          color = colHex
+        ),
+        material_checkbox(
+          input_id = "removeNight",
+          label = "Ignore nighttime data (after sunset, before sunrise)",
+          initial_value = FALSE,
+          color = colHex
+        ),
+        
+        #Species selection dropdown box(es)
+        uiOutput(outputId = "speciesSelect")
+      )
+    )
+  })
+  
   #Clean raw.dat ----
   clean.dat <- reactive({
     #Show a loading spinner during processing
-    material_spinner_show(session = session, output_id = "speciesSelect")
+    material_spinner_show(session = session, output_id = "globalUI")
     
     #Import only independent data
     cleanFrame <- raw.dat()
@@ -170,7 +219,7 @@ function(input, output, session) {
     cleanFrame["Lunar"] <- (getMoonIllumination(cleanFrame$Date, "phase")[,2])*2*pi
     
     #Hide the loading spinner when processing is complete
-    material_spinner_hide(session = session, output_id = "speciesSelect")
+    material_spinner_hide(session = session, output_id = "globalUI")
     
     return(cleanFrame)
   })
@@ -305,6 +354,12 @@ function(input, output, session) {
   #Data subsets ----
   a.dat <- reactive({
     cleanFrame <- clean.dat()
+    if (input$removeNight) cleanFrame <- subset(cleanFrame,
+                                                cleanFrame$Solar > (1/2)*pi &
+                                                  cleanFrame$Solar < (3/2)*pi)
+    if (input$removeDay) cleanFrame <- subset(cleanFrame,
+                                              cleanFrame$Solar < (1/2)* pi |
+                                                cleanFrame$Solar > (3/2)*pi)
     cleanFrame <- subset(cleanFrame[[input$modeSelect]],
                          cleanFrame$Species == input$speciesA &
                            cleanFrame$Site %in% siteListA()[siteA()] &
@@ -314,6 +369,12 @@ function(input, output, session) {
   })
   b.dat <- reactive({
     cleanFrame <- clean.dat()
+    if (input$removeNight) cleanFrame <- subset(cleanFrame,
+                                                cleanFrame$Solar > (1/2)*pi &
+                                                  cleanFrame$Solar < (3/2)*pi)
+    if (input$removeDay) cleanFrame <- subset(cleanFrame,
+                                              cleanFrame$Solar < (1/2)* pi |
+                                                cleanFrame$Solar > (3/2)*pi)
     cleanFrame <- subset(cleanFrame[[input$modeSelect]],
                          cleanFrame$Species == input$speciesB &
                            cleanFrame$Site %in% siteListB()[siteB()] &
@@ -326,21 +387,25 @@ function(input, output, session) {
   output$plotCard <- renderUI({
     if (input$speciesNumber) {
       material_card(
-        title = paste("Overlap between", input$speciesA, "and", input$speciesB),
-        plotOutput(outputId = "abPlot", height = "640px")
+        title = HTML(paste("Overlap between <i>", input$speciesA, "</i>and<i>", input$speciesB, "</i>")),
+        plotOutput(outputId = "abPlot", height = "480px")
       )
     }
     else {
       material_card(
-        title = paste("Activity Pattern of", input$speciesA),
-        plotOutput(outputId = "aPlot", height = "640px")
+        title = HTML(paste("Activity Pattern of<i>", input$speciesA, "</i>")),
+        plotOutput(outputId = "aPlot", height = "480px")
       )
     }
   })
+  
+  #Plot A vs B ----
   output$abPlot <- renderPlot({
     overlapPlot(A = a.dat(),
-                B = b.dat(),
+                B = b.dat(), 
                 xscale = NA,
+                rug = TRUE,
+                n.grid = 256,
                 xaxt="n",
                 main = NULL)
     
@@ -366,8 +431,37 @@ function(input, output, session) {
       )
     }
   })
+  
+  #Plot A only ----
   output$aPlot <- renderPlot({
-    #Needs work
+    densityPlot(A = a.dat(),
+                xscale = NA,
+                rug = TRUE,
+                n.grid = 256,
+                xaxt = "n",
+                main = NULL)
+    
+    if (input$modeSelect == "TimeRad") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("00:00", "06:00", "12:00", "18:00", "24:00")
+      )
+    }
+    if (input$modeSelect == "Solar") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("Midnight", "Sunrise", "Noon", "Sunset", "Midnight")
+      )
+    }
+    if (input$modeSelect == "Lunar") {
+      axis(
+        side = 1,
+        at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon")
+      )
+    }
   })
   
   #Analysis UI ----
