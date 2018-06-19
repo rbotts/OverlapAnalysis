@@ -202,23 +202,7 @@ material_page(
         uiOutput(outputId = "analysisCard"),
         
         #Confidence Interval card
-        material_card(
-          title = "Overlap Confidence Interval",
-          material_slider(
-            input_id = "bootSlider",
-            label = "Thousands of bootstrap samples",
-            min_value = 1,
-            max_value = 10,
-            initial_value = 10,
-            color = colHex
-          ),
-          material_button(
-            input_id = "bootButton",
-            label = "Calculate",
-            color = colText
-          ),
-          uiOutput(outputId = "bootResults")
-        )
+        uiOutput(outputId = "bootCard")
       )
     )
   ),

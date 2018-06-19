@@ -116,6 +116,236 @@ materialCheckboxGroupRead <- function(idBase, choices) {
   return(output)
 }
 
+watson2 <- function(x, y) {
+  #' Calculate Watson's U-squared statistic for two vectors of circular data in radians. Note that this algorithm is modified to work with "tied" data as suggested by Zar in "Biostatistical Analysis" (1999).
+  #' @param x A numerical vector of measured points for the first circular data set (in RADIANS).
+  #' @param y A numerical vector of measured points for the second circular data set (in RADIANS).
+  
+  n1 <- length(x)
+  n2 <- length(y)
+  if (min(n1, n2) <= 17) return("Sample too small. Both must be >17.")
+  N <- n1+n2
+  
+  a <- c(x,y) #Putting all unique values into one ordered set, creating a unified coordinate system
+  a <- a[duplicated(a) == FALSE]
+  a <- a[order(a)]
+  kmax <- length(a)
+  
+  t1 <- t2 <- m1 <- m2 <- c1 <- c2 <- rep.int(0, kmax) #Preallocating several variables
+  
+  for (k in 1:kmax) { #Finding the frequency of each value in x and y, respectively
+    t1[k] <- sum(x==a[k])
+    t2[k] <- sum(y==a[k])
+  }
+  
+  m1 <- cumsum(t1) #Calculating the cumulative frequency distributions of x and y, respectively
+  m2 <- cumsum(t2)
+  
+  c1 <- m1/n1 #Calculating the cumulative relative frequency distributions of x and y, respectively
+  c2 <- m2/n2
+  
+  d <- c1-c2 
+  t <- t1+t2 #The total frequency of each value; used when there are multiple observations of a value (ties)
+  
+  da <- sum(d*t)
+  db <- sum(d*d*t)
+  U2 <- ((n1*n2)/(N^2))*(db - ((da^2)/N)) #Calculating the U-squared statistic
+  
+  return(U2)
+}
+
+watson2test <- function(x, y) { 
+  #' Estimate the p-value of Watson's U-squared statistic for two given vectors, following the algorithm of Tiku from "Chi-Square Approximations for the Distributions of Goodness-Of-Fit Statistics U^2 and W^2" in Biometrika (1965).
+  #' @param x A numerical vector of measured points for the first circular data set (in RADIANS).
+  #' @param y A numerical vector of measured points for the second circular data set (in RADIANS).
+  
+  U2 <- watson2(x, y) #Calculate U-squared
+  N <- length(x) + length(y)
+  
+  a <- ((21*N)-56)/(840*(N-1.5))
+  b <- (N-1.5)/(42*N)
+  f <- ((49*N)*(N-1))/(20*((N-1.5)^2)) #Approximation constants
+  
+  chi <- (U2-a)/b
+  p <- pchisq(q = chi, df = f, lower.tail = FALSE) #Approximating from chi-squared distribution
+  return(p)
+}
+
+w.stat <- function(...) {
+  #' Calculates the r-sample uniform scores W statistic for r sets of circular data. See: NI Fisher "Statistical analysis of circular data". Section 5.3.6, page 122. Book. (1993)
+  #' 
+  #' @param ... Two or more numerical vectors of circular data (in RADIANS).
+  
+  #Data input and organization
+  dataList <- list(...)
+  unData <- data.frame(Point = sort(unlist(dataList)))
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  r <- length(n) #r is the number of vectors input
+  
+  #Linear Rank
+  unData["Rank"] <- 1:N
+  for (i in 1:N) {
+    whenSame <- unData$Point == unData$Point[i] #Create logical vector of which points of unData$Point are the same as a given point
+    numSame <- sum(whenSame) #How many times does this value appear?
+    
+    if (numSame > 1) { #If a value appears more than once...
+      unData$Rank[whenSame] <- rep(mean(unData$Rank[whenSame]), times = numSame) #...every point with that value should take the average Rank
+    }
+  }
+  
+  unData["Uniform"] <- 2 * pi * unData$Rank / N #Circular Rank, a.k.a: "Uniform Score"
+  
+  #Calculating W
+  C <- S <- rep(0, times = length(n)) #Preallocate values
+  for (i in 1:length(n)) {
+    for (j in 1:n[i]) {
+      rankOrder <- unData$Uniform[unData$Point == dataList[[i]][j]]
+      rankOrder <- mean(rankOrder) #mean() condenses rankOrder to a single value if vector
+      C[i] <- C[i] + cos(rankOrder)
+      S[i] <- S[i] + sin(rankOrder)
+    }
+  }
+  
+  W <- 2 * sum((C^2 + S^2)/n)
+  return(W)
+}
+
+w.prob.chi <- function(...) {
+  #' Estimates the p-value of an r-sample uniform scores W statistic for r sets of circular data. See: NI Fisher "Statistical analysis of circular data". Section 5.3.6, page 122. Book. (1993)
+  #' 
+  #' @param ... Two or more numerical vectors of circular data (in RADIANS).
+  
+  #Data input and organization
+  dataList <- list(...)
+  W0 <- do.call(what = w.stat, args = dataList) #W statistic of actual data
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  r <- length(n) #r is the number of vectors input
+  
+  return(pchisq(q = W0, df = 2*r - 2, lower.tail = FALSE)) #Approximate with Chi-square
+}
+
+overlapCI <- function(animal1, animal2, n.boot = 10000) {
+  #' Estimates the overlap coefficient (\Delta) from two sets of circular data. See: Ridout and Linkie, "Estimating Overlap of Daily Activity Patterns From Camera Trap Data" in \emph{Journal of Agricultural, Biological, and Environmental Statistics} (2009)
+  #' 
+  #' @param animal1 A numerical vector of measured points for the first species in RADIANS.
+  #' @param animal2 A numerical vector of measured points for the second species in RADIANS.
+  #' @param n.boot How many bootstrap trials should be run? Defaults to ten thousand.
+  
+  require("overlap")
+  
+  #Preallocate output
+  ovl <- c()
+  
+  if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 15) {
+    ovl["estimate"] <- overlapEst(animal1, animal2, adjust=c(0.8, NA, NA))[1]
+    boot1 <- resample(animal1, n.boot)
+    boot2 <- resample(animal2, n.boot)
+    ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
+    ovl.boot.ci <- bootCI(ovl["estimate"], ovl.boot)
+    ovl["estimate"] <- round(ovl["estimate"], digits = 4)
+    ovl["lower"] <- round(ovl.boot.ci[4,1], digits = 4)
+    ovl["upper"] <- round(ovl.boot.ci[4,2], digits = 4)
+    
+  } else if (min(length(animal1), length(animal2)) > 75) {
+    ovl["estimate"] <- overlapEst(animal1, animal2, adjust=c(NA, 1, NA))[2]
+    boot1 <- resample(animal1, n.boot)
+    boot2 <- resample(animal2, n.boot)
+    ovl.boot <- bootEst(boot1, boot2, adjust=c(NA, 1, NA))[,2]
+    ovl.boot.ci <<- bootCI(ovl["estimate"], ovl.boot)
+    ovl["estimate"] <- round(ovl["estimate"], digits = 4)
+    ovl["lower"] <- round(ovl.boot.ci[4,1], digits = 4)
+    ovl["upper"] <- round(ovl.boot.ci[4,2], digits = 4)
+  } else ovl["estimate"] <- "Sample too small"
+  
+  return(ovl)
+}
+
+permutationTest <- function(FUN, ..., trials = 10000, rightTail = TRUE) {
+  #' Performs a permutation test to estimate the probability that a statistic would have a value greater than (or less than, if rightTail = FALSE) the actual value obtained.
+  #' 
+  #' @param FUN A function that outputs a single numeric value when given two or more data vectors.
+  #' @param ... The arguments to be passed into FUN, calculating the "actual" statistical estimate.
+  #' @param trials Integer. How many trials should be run? Defaults to ten thousand.
+  #' @param rightTail Boolean. Should the p-value be given integrated for the right-side tail?
+  
+  dataList <- list(...)
+  val0 <- do.call(what = FUN, args = dataList) #Statistic of actual data
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  r <- length(n) #r is the number of vectors input
+  
+  #Randomization test
+  valRand <- rep(x = NA, times = trials) #Preallocate result vector
+  
+  for (i in 1:trials) {
+    
+    #Preallocate dataList for this trial
+    randList <- list()
+    
+    #Randomly resample points for each data vector from total population without replacement
+    randDat <- sample(x = unlist(dataList), size = N, replace = FALSE)
+    
+    #Generate the resampled datasets
+    for (j in 1:r) {
+      if (j == 1) randList[[1]] <- randDat[1:n[j]] #The first "new" data vector has n[1] points
+      else {
+        nStart <- length(unlist(randList))
+        randList[[j]] <- randDat[(nStart+1):(nStart+n[j])] #The j'th "new" data vector has n[j] points
+      }
+    }
+    valRand[i] <- do.call(what = FUN, args = randList) #Once all "new" data vectors constructed, find FUN of "new" dataset and store it in the valRand vector
+  }
+  valSort <- sort(valRand) #Arrange results from randomization in ascending order
+  p <- which.min(abs(valSort - val0)) #Figure out where val0 fits into the randomized distribution
+  
+  #Return the right or left p-value, depending on rightTail argument
+  if (rightTail) return(c("val" = val0, "p.value" = 1-(p/trials))) else return(c("val" = val0, "p.value" = (p/trials)))
+}
+
+circularFisherTest <- function(animal1, animal2, bins = 12) {
+  #' Performs a Fisher's Exact Test on two circular data sets to analyze similarity.
+  #' 
+  #' @param animal1 A numerical vector of measured points for the first species in RADIANS.
+  #' @param animal2 A numerical vector of measured points for the second species in RADIANS.
+  #' @param bins Into how many bins should the data be divided before analysis? Defaults to 12.
+  
+  binning <- function(x, bins) {
+    #' Break a circular data set into equally-spaced bins \emph{(e.g: for chi-square analysis)}.
+    #' 
+    #' @param x A numerical vector of measured points in RADIANS
+    #' @param bins Integer. How many bins should `x` be divided into?
+    
+    #Create boundaries for the bins
+    cutoffs <- seq(from = 0,
+                   to = 2 * pi,
+                   length.out = bins + 1)
+    n <- length(cutoffs)
+    
+    #Preallocate the output
+    output <- rep(NA, times = length(x))
+    
+    for (i in cutoffs[-n]) {
+      output <- ifelse(test = x >= i, #If x is greater than or equal to cutoff[i]...
+                       yes = which(i == cutoffs), #Then output should be i
+                       no = output) #Else it should stay what it is)
+    }
+    
+    return(output)
+  }
+  
+  animal1bin <- binning(x = animal1, bins = bins)
+  animal1bin <- setNames(tabulate(animal1bin), 1:max(animal1bin))
+  animal2bin <- binning(x = animal2, bins = bins)
+  animal2bin <- setNames(tabulate(animal2bin), 1:max(animal2bin))
+  animalbins <- rbind(animal1bin, animal2bin)
+  size = 2 * bins
+  
+  chistat <- fisher.test(animalbins, simulate.p.value = TRUE, B = 100000)
+  
+  return(chistat["p.value"])
+}
+
 #Server function ----
 function(input, output, session) {
   
@@ -436,18 +666,144 @@ function(input, output, session) {
   
   #Analysis UI ----
   output$analysisCard <- renderUI({
-    material_card(
-      title = "Analysis",
-      HTML(paste0("<p style = \"color:#9e9e9e\"> <i><b>", input$speciesA, ":</b></i> n = ", length(a.dat()))),
-      uiOutput(outputId = "nB")
-    )
+    material_card(title = "Analyze",
+                  HTML(
+                    paste0(
+                      "<p style = \"color:#9e9e9e\"> <i><b>",
+                      input$speciesA,
+                      ":</b></i> n = ",
+                      length(a.dat())
+                    )
+                  ),
+                  uiOutput(outputId = "nB"))
   })
   output$nB <- renderUI(if (input$speciesNumber) {
-    HTML(paste0("<p style = \"color:#9e9e9e\"> <i><b>", input$speciesB, ":</b></i> n = ", length(b.dat())))
+    div(
+      #Sample size of B
+      HTML(
+        paste0(
+          "<p style = \"color:#9e9e9e\"> <i><b>",
+          input$speciesB,
+          ":</b></i> n = ",
+          length(b.dat())
+        )
+      ),
+      
+      #Overlap statistic estimates
+      HTML(
+        paste0(
+          "<p style = \"color:#9e9e9e\"> ",
+          #Overlap
+          "<br> Estimated overlap coefficient &Delta;: ",
+          tryCatch(
+            expr = round(overlapEst(a.dat(), b.dat(), adjust=c(0.8, NA, NA))[1], digits = 4),
+            error = function(cond) "Error!"
+          ),
+          
+          #Watson's U-squared
+          "<br> Watson's U<sup>2</sup>: ",
+          tryCatch(
+            expr = {
+              if (is.numeric(watson2(x = a.dat(), y = b.dat()))) {
+                round(watson2(x = a.dat(), y = b.dat()), digits = 4)
+              } else watson2(x = a.dat(), y = b.dat())
+            },
+            error = function(cond) "Error!"
+          ),
+          
+          #Uniform scores Wr
+          "<br> Uniform Scores W<sub>2</sub>: ",
+          tryCatch(
+            expr = round(w.stat(a.dat(), b.dat()), digits = 4),
+            error = function(cond) "Error!"
+          )
+        )
+      )
+    )
   })
   
-  #Debug button ----
-  observeEvent(eventExpr = input$bootButton, handlerExpr = {
-    dataPeek <<- clean.dat() #to take a peek at what's going on behind the Shiny for debugging purposes
-  }, ignoreInit = TRUE)
+  #Bootstrap UI ----
+  output$bootCard <- renderUI({
+    material_card(
+      title = "Calculate",
+      HTML("<p style = \"color:#9e9e9e\"> Estimate a confidence interval (Overlap coefficient) and p-values (Watson's U<sup>2</sup> and Uniform Scores W<sub>2</sub>) using permutation tests."),
+      material_row(
+        material_column(
+          width = 10,
+          align = "center",
+          material_slider(input_id = "bootSlider",
+                          label = "Thousands of bootstrap trials",
+                          min_value = 1,
+                          max_value = 10,
+                          initial_value = 10,
+                          color = colHex),
+          material_modal(modal_id = "bootModal",
+                         button_text = "Confidence Intervals and P-Values",
+                         title = "Confidence Intervals and P-Values",
+                         button_color = colText,
+                         
+                         #Modal UI Elements
+                         material_row(
+                           material_column(
+                             width = 12,
+                             uiOutput(outputId = "modalAnalyses"),
+                             uiOutput(outputId = "modalSpinner")
+                             )
+                           )
+                         )
+        )
+      )
+    )
+  })
+  
+  #Calculation ----
+  output$modalAnalyses <- renderUI({
+    material_spinner_show(session = session, output_id = "modalSpinner")
+    overlapResults <- overlapCI(animal1 = a.dat(),
+                                animal2 = b.dat(),
+                                n.boot = input$bootSlider*1000)
+    watsonResults <- permutationTest(FUN = watson2,
+                                     a.dat(),
+                                     b.dat(),
+                                     trials = input$bootSlider*1000)
+    uniformResults <- permutationTest(FUN = w.stat,
+                                      a.dat(),
+                                      b.dat(),
+                                      trials = input$bootSlider*1000)
+    material_row(
+      material_column(
+        width = 6,
+        HTML(paste0(
+          "<u>95% Confidence Interval for &Delta;</u> <br>",
+          overlapResults["lower"], " to ", overlapResults["upper"],
+          "<br>"
+        )),
+        HTML(paste0(
+          "<u>Watson's U<sup>2</sup></u> <br>",
+          "Permutation test estimated p-value: ",
+          watsonResults, "<br>",
+          "Chi-Square Approximated p-value: ",
+          watson2test(a.dat(), b.dat())
+        ))
+      ),
+      material_column(
+        width = 6,
+        HTML(paste0(
+          "<u>Uniform Scores W<sub>2</sub></u> <br>",
+          "Permutation test estimated p-value: ",
+          uniformResults, "<br>",
+          "Chi-Square Approximated p-value: ",
+          w.prob.chi(a.dat(), b.dat()),
+          "<br>",
+          "<u>Fisher's Exact Test, data broken into 12 equally-spaced bins with 100,000 simulated trials</u> <br>",
+          circularFisherTest(animal1 = a.dat(),
+                             animal2 = b.dat(),
+                             bins = 12)
+        ))
+      )
+    )
+    
+    material_spinner_hide(session = session, output_id = "modalSpinner")
+  })
+  
 }
