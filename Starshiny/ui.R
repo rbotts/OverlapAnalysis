@@ -53,6 +53,13 @@ instructions <-
 The source code for this app is available <u><a href=\"https://github.com/rbotts/OverlapAnalysis\">here</a></u> on Github.
 "}
 
+timeZones <- OlsonNames()
+timeZoneLengthTotal <- length(timeZones)
+timeZoneLength1 <- trunc(timeZoneLengthTotal) / 2
+timeZoneLength2 <- timeZoneLengthTotal - timeZoneLength1
+timeZone1 <- head(timeZones, n = timeZoneLength1)
+timeZone2 <- tail(timeZones, n = timeZoneLength2)
+
 colHex <- "#f4511e"
 colText <- "deep-orange darken-1"
 
@@ -84,7 +91,31 @@ material_page(
           HTML("Upload your data set as a plaintext CSV spreadsheet file."),
           material_file_input(input_id = "dataFile",
                               label = "Browse...",
-                              color = colHex)
+                              color = colHex),
+          HTML("<br> In what time zone was your data recorded? (Default: \"America/Costa_Rica\")"),
+          material_text_box(input_id = "timeZone",
+                            label = NULL,
+                            color = colHex),
+          material_modal(modal_id = "timeZoneOptions",
+                         button_text = "Supported Timezones...",
+                         title = "Supported Timezones",
+                         button_color = colText,
+                         material_row(
+                           material_column(
+                             width = 6,
+                             material_card(
+                               title = NULL,
+                               HTML(paste(timeZone1, collapse = "<br>"))
+                             )
+                           ),
+                           material_column(
+                             width = 6,
+                             material_card(
+                               title = NULL,
+                               HTML(paste(timeZone2, collapse = "<br>"))
+                             )
+                           )
+                         ))
         )
       )
     )
@@ -102,12 +133,58 @@ material_page(
         width = 4,
         material_card(
           title = "Global Options",
-          material_row(uiOutput(outputId = "globalUI"))
+          material_row(
+            #One/Two species switch
+            material_column(
+              width = 12, align = "center",
+              material_switch(input_id = "speciesNumber",
+                              label = NULL,
+                              off_label = "Only A",
+                              on_label = "A vs B",
+                              initial_value = TRUE,
+                              color = colHex)
+            ),
+            
+            #Rest of the global UI
+            material_column(
+              width = 12,
+              #Mode selection radio buttons
+              HTML("<p style = \"color:#9e9e9e\"> What would you like to use as your (x-axis) independent variable?"),
+              material_radio_button(
+                input_id = "modeSelect",
+                label = NULL,
+                choices = c("Clock Time" = "TimeRad",
+                            "Solar Time" = "Solar",
+                            "Moon Phase" = "Lunar"),
+                color = colHex
+              ),
+              
+              #Choose data to ignore
+              HTML("<p style = \"color:#9e9e9e\"> What data should be thrown out?"),
+              material_checkbox(
+                input_id = "removeDay",
+                label = "Ignore daylight data (after sunrise, before sunset)",
+                initial_value = FALSE,
+                color = colHex
+              ),
+              material_checkbox(
+                input_id = "removeNight",
+                label = "Ignore nighttime data (after sunset, before sunrise)",
+                initial_value = FALSE,
+                color = colHex
+              ),
+              
+              #Species selection dropdown box(es)
+              uiOutput(outputId = "speciesSelect")
+            )
+          )
         )
       ),
       #Second/Third column(s), Filtering UI
       material_column(width = 8, uiOutput(outputId = "filterUI"))
     ),
+    
+    material_row(material_column(width = 12, uiOutput(outputId = "loadingSpinner"))),
     
     #*Second Row ----
     material_row(

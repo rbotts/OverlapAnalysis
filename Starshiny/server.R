@@ -127,59 +127,10 @@ function(input, output, session) {
     } else read.csv(file = input$dataFile$datapath, header = TRUE, stringsAsFactors = FALSE)
   })
   
-  #Global UI ----
-  output$globalUI <- renderUI({
-    div(
-      #One/Two species switch
-      material_column(
-        width = 12, align = "center",
-        material_switch(input_id = "speciesNumber",
-                        label = NULL,
-                        off_label = "Only A",
-                        on_label = "A vs B",
-                        initial_value = TRUE,
-                        color = colHex)
-      ),
-      
-      #Rest of the global UI
-      material_column(
-        width = 12,
-        #Mode selection radio buttons
-        HTML("<p style = \"color:#9e9e9e\"> What would you like to use as your (x-axis) independent variable?"),
-        material_radio_button(
-          input_id = "modeSelect",
-          label = NULL,
-          choices = c("Clock Time" = "TimeRad",
-                      "Solar Time" = "Solar",
-                      "Moon Phase" = "Lunar"),
-          color = colHex
-        ),
-        
-        #Choose data to ignore
-        HTML("<p style = \"color:#9e9e9e\"> What data should be thrown out?"),
-        material_checkbox(
-          input_id = "removeDay",
-          label = "Ignore daylight data (after sunrise, before sunset)",
-          initial_value = FALSE,
-          color = colHex
-        ),
-        material_checkbox(
-          input_id = "removeNight",
-          label = "Ignore nighttime data (after sunset, before sunrise)",
-          initial_value = FALSE,
-          color = colHex
-        ),
-        
-        #Species selection dropdown box(es)
-        uiOutput(outputId = "speciesSelect")
-      )
-    )
-  })
-  
   #Clean raw.dat ----
   clean.dat <- reactive({
     #Show a loading spinner during processing
-    material_spinner_show(session = session, output_id = "globalUI")
+    material_spinner_show(session = session, output_id = "loadingSpinner")
     
     #Import only independent data
     cleanFrame <- raw.dat()
@@ -212,13 +163,13 @@ function(input, output, session) {
       "lon" = cleanFrame$Longitude,
       "time" = cleanFrame$TimeRad
     )
-    cleanFrame["Solar"] <- solarTime(sunData)
+    cleanFrame["Solar"] <- solarTime(dat = sunData, tzone = input$timeZone)
     
     #Adding a lunar column
     cleanFrame["Lunar"] <- (getMoonIllumination(cleanFrame$Date, "phase")[,2])*2*pi
     
     #Hide the loading spinner when processing is complete
-    material_spinner_hide(session = session, output_id = "globalUI")
+    material_spinner_hide(session = session, output_id = "loadingSpinner")
     
     return(cleanFrame)
   })
@@ -406,9 +357,17 @@ function(input, output, session) {
                 rug = TRUE,
                 n.grid = 256,
                 xaxt="n",
+                xlab = "",
                 main = NULL)
+    legend("top",
+           legend = c(input$speciesA, input$speciesB),
+           col = c("black", "blue"),
+           lty = c(1, 2)
+    )
     
+    #The following 3 `if` statements should be identical to those in aPlot below. If you make changes, don't forget to update that section as well.
     if (input$modeSelect == "TimeRad") {
+      title(xlab = "Clock Time")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
@@ -416,6 +375,7 @@ function(input, output, session) {
       )
     }
     if (input$modeSelect == "Solar") {
+      title(xlab = "Solar Time")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
@@ -423,6 +383,7 @@ function(input, output, session) {
       )
     }
     if (input$modeSelect == "Lunar") {
+      title(xlab = "Moon Phase")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
@@ -435,12 +396,20 @@ function(input, output, session) {
   output$aPlot <- renderPlot({
     densityPlot(A = a.dat(),
                 xscale = NA,
-                rug = TRUE,
+                rug = FALSE,
                 n.grid = 256,
                 xaxt = "n",
+                xlab = "",
                 main = NULL)
     
+    rug(
+      x = a.dat(),
+      side = 1
+    )
+    
+    #The following 3 `if` statements should be identical to those in abPlot above. If you make changes, don't forget to update that section as well.
     if (input$modeSelect == "TimeRad") {
+      title(xlab = "Clock Time")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
@@ -448,6 +417,7 @@ function(input, output, session) {
       )
     }
     if (input$modeSelect == "Solar") {
+      title(xlab = "Solar Time")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
@@ -455,6 +425,7 @@ function(input, output, session) {
       )
     }
     if (input$modeSelect == "Lunar") {
+      title(xlab = "Moon Phase")
       axis(
         side = 1,
         at = c(0, pi / 2, pi, 3 * pi / 2, 2 * pi),
