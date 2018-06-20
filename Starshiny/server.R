@@ -498,6 +498,7 @@ function(input, output, session) {
       HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
       materialCheckboxGroupWrite(idBase = "monthsA",
                                  choices = 1:12,
+                                 initials = rep(TRUE, length.out = 12),
                                  color = colHex)
     )
   })
@@ -513,6 +514,7 @@ function(input, output, session) {
       HTML("<br> <p style = \"color:#9e9e9e\"> Months to include?"),
       materialCheckboxGroupWrite(idBase = "monthsB",
                                  choices = 1:12,
+                                 initials = rep(TRUE, length.out = 12),
                                  color = colHex)
     )
   })
