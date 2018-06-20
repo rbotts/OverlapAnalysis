@@ -352,6 +352,11 @@ circularFisherTest <- function(animal1, animal2, bins = 12) {
 #Server function ----
 function(input, output, session) {
   
+  #Set default timezone
+  update_material_text_box(session = session,
+                           input_id = "timeZone",
+                           value = "America/Costa_Rica")
+  
   #Upload raw.dat ----
   raw.dat <- reactive({
     upFile <- input$dataFile

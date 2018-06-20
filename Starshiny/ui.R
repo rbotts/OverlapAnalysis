@@ -18,21 +18,23 @@ instructions <-
     <ol>
       <li>\"Species\", which holds the <i><u>species name</u></i> of the animal observation of that row. </li>
       <li>\"Time\", which holds the <u>time of day</u> in which the animal was observed, in <b>decimal format</b>. It can be out of either 24 hours (e.g: 11:59pm -> 23.98) or 1 day (e.g: 11:59pm -> 0.99). </li>
-      <li>\"Date\", which holds the <u>date</u> on which the observation took place, in m/d/YYYY format. </li>
-      <li>\"Survey.Name\", which contains the <u>site</u> at which the study took place. Note that season names (\"Spring\", \"Summer\", \"Autumn\", \"Fall\", \"Winter\") and numbers (e.g: 2018) will be removed such that surveys can be grouped by name. For example, \"Site1 Summer 2017\", \"Site2 Fall 2010\", \"Spring 2008 Site1\", and \"Site2 2015 Autumn\" would be considered to come from \"Site1\", \"Site2\", \"Site1\", and \"Site2\", respectively. </li>
+      <li>\"Date\", which holds the <u>date</u> on which the observation took place, in m/d/YYYY format (e.g: May 4, 2010 -> 5/4/2010; November 1, 2016 -> 11/1/2016). </li>
+      <li>\"Survey.Name\", which contains the <u>site</u> at which the study took place. Note that season names (\"Spring\", \"Summer\", \"Autumn\", \"Fall\", \"Winter\") and 20xx years (e.g: 2018) will be removed such that surveys can be grouped by name. For example, \"Site1 Summer 2017\", \"Site2 Fall 2010\", \"Spring 2008 Site1\", and \"Site2 2015 Autumn\" would be considered to come from \"Site1\", \"Site2\", \"Site1\", and \"Site2\", respectively. </li>
       <li>\"Independent\", with a value of \"Yes\" indicating that the observation is independent of others (to prevent autocorrelation). Rows with anything other than \"Yes\" in this column will be ignored. </li>
       <li>\"Longitude\", which holds the <u>geographic longitude</u> of the observation in <b>decimal degrees</b>. </li>
       <li>\"Latitude\", which holds the <u>geographic latitude</u> of the observation in <b>decimal degrees</b>. </li>
     </ol>
   </li>
   
+  <li>In the box prompting you to do so, enter the time zone your data uses. If it's the same as America/Costa_Rica (that is, UTC-6), you can skip this step; that is the default time zone assumed when nothing is typed into the text box. If you're unsure which time zone to use, pressing the button labelled \"Supported Timezones...\" will bring up a list of all timezones supported by the app. To close that list, scroll all the way to the bottom and click the button labelled \"Close\". </li>
+  
   <li>Click the \"Data Analysis\" tab at the top of the page. </li>
 
-  <li>There will be two rows on that page, with three columns in the first row and two columns in the second.
+  <li>There will be two rows on that page, with three columns in the first row and two columns in the second. Note that this page may take a few moments to fully load in, especially with large data sets.
     <ol>
       <li>The first (top-left) column contains the largest-scale, global options. These include the ability to select the number of species to analyze (1 or 2), the independent variable to use for the analysis (explained below), whether to throw out certain groups of data <i>(e.g: daytime data)</i>, and which species to analyze.</li>
       <li>The second and third columns give the ability to filter the data sets by site and month.</li>
-      <li>The lower row will have a plot on the left, and two cards on the right. The top card will have basic analytics about the data. The sample size for each species will be shown, and, if analyzing in two-species comparison mode, some statistics regarding the degree of overlap or similarity between the two species.</li>
+      <li>The lower row will have a plot on the left, and some cards on the right. The top card will have basic analytics about the data. The sample size for each species will be shown, and, if analyzing in two-species comparison mode, some statistics regarding the degree of overlap or similarity between the two species, as well as a second card that allows estimation of related confidence intervals and p-values.</li>
   </li>
 </ol>
 
@@ -42,7 +44,7 @@ instructions <-
 
 <ol>
   <li>\"Clock Time\", which uses the time, exactly as recorded in the \"Time\" column of the uploaded data set, for all analyses. </li>
-  <li>\"Solar Time\", which converts the clock time to a \"Solar Time\" (expressed in terms of the sunrise and sunset) that is used for all analyses. </li>
+  <li>\"Solar Time\", which converts the clock time to a \"Solar Time\" (expressed in terms of the sunrise and sunset) that is used for all analyses. The times of sunrise/sunset are calculated based on the date, location (from Longitude and Latitude), and timezone in which each observation took place. </li>
   <li>\"Moon Phase\", which uses the phase of the moon (calculated based on the date of the observation), rather than a time of day, for all analyses. </li>
 </ol>
 
