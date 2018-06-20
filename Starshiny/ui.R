@@ -5,8 +5,8 @@ require("shiny")
 require("shinymaterial")
 
 #Constants ----
-instructions <-
-{"
+titleVersion <- "Starshiny 1.0"
+instructions <- {"
 <br>
 
 <b>Instructions:</b>
@@ -67,7 +67,7 @@ colText <- "deep-orange darken-1"
 
 #Page ----
 material_page(
-  title = "Starshiny: Overlap Analysis with R Shiny",
+  title = titleVersion,
   nav_bar_color = colText,
   
   material_tabs(
@@ -81,7 +81,9 @@ material_page(
     material_row(
       material_column(
         width = 6,
-        HTML("<br>This web app allows users study the patterns in and overlap between circular density curves. It is designed to be used to study the activity patterns of animals based on camera trap data, although it should also work with any other type of cyclically-dependent detection data.
+        HTML("<br>
+            <h4>Starshiny: Overlap Analysis with R Shiny</h4>
+            <br>This web app allows users study the patterns in and overlap between circular density curves. It is designed to be used to study the activity patterns of animals based on camera trap data, although it should also work with any other type of cyclically-dependent detection data.
              <br>
              <br>
              For more details and instructions for use, see the \"About\" tab.")
@@ -98,26 +100,33 @@ material_page(
           material_text_box(input_id = "timeZone",
                             label = NULL,
                             color = colHex),
-          material_modal(modal_id = "timeZoneOptions",
-                         button_text = "Supported Timezones...",
-                         title = "Supported Timezones",
-                         button_color = colText,
-                         material_row(
-                           material_column(
-                             width = 6,
-                             material_card(
-                               title = NULL,
-                               HTML(paste(timeZone1, collapse = "<br>"))
-                             )
-                           ),
-                           material_column(
-                             width = 6,
-                             material_card(
-                               title = NULL,
-                               HTML(paste(timeZone2, collapse = "<br>"))
-                             )
-                           )
-                         ))
+          material_row(
+            material_column(
+              width = 6,
+              offset = 6,
+              align = "center",
+              material_modal(modal_id = "timeZoneOptions",
+                             button_text = "Supported Timezones...",
+                             title = "Supported Timezones",
+                             button_color = colText,
+                             material_row(
+                               material_column(
+                                 width = 6, align = "left",
+                                 material_card(
+                                   title = NULL,
+                                   HTML(paste(timeZone1, collapse = "<br>"))
+                                 )
+                               ),
+                               material_column(
+                                 width = 6, align = "left",
+                                 material_card(
+                                   title = NULL,
+                                   HTML(paste(timeZone2, collapse = "<br>"))
+                                 )
+                               )
+                             ))
+            )
+          )
         )
       )
     )
