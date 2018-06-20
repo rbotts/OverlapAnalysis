@@ -343,7 +343,10 @@ circularFisherTest <- function(animal1, animal2, bins = 12) {
   
   chistat <- fisher.test(animalbins, simulate.p.value = TRUE, B = 100000)
   
-  return(chistat["p.value"])
+  return(
+    tryCatch(expr = {round(x = chistat["p.value"], digits = 4)},
+             error = function(cond) {"Error! Sample size probably too small."})
+  )
 }
 
 #Server function ----
@@ -723,13 +726,13 @@ function(input, output, session) {
   })
   
   #Bootstrap UI ----
-  output$bootCard <- renderUI({
+  output$bootCard <- renderUI(if (input$speciesNumber) {
     material_card(
       title = "Calculate",
-      HTML("<p style = \"color:#9e9e9e\"> Estimate a confidence interval (Overlap coefficient) and p-values (Watson's U<sup>2</sup> and Uniform Scores W<sub>2</sub>) using permutation tests."),
+      HTML("<p style = \"color:#9e9e9e\"> Estimate a confidence interval (Overlap coefficient) and p-values (Watson's U<sup>2</sup>, Uniform Scores W<sub>2</sub>, and Fisher's Exact Test) using permutation tests. <br> <br>"),
       material_row(
         material_column(
-          width = 10,
+          width = 12,
           align = "center",
           material_slider(input_id = "bootSlider",
                           label = "Thousands of bootstrap trials",
@@ -737,28 +740,20 @@ function(input, output, session) {
                           max_value = 10,
                           initial_value = 10,
                           color = colHex),
-          material_modal(modal_id = "bootModal",
-                         button_text = "Confidence Intervals and P-Values",
-                         title = "Confidence Intervals and P-Values",
-                         button_color = colText,
-                         
-                         #Modal UI Elements
-                         material_row(
-                           material_column(
-                             width = 12,
-                             uiOutput(outputId = "modalAnalyses"),
-                             uiOutput(outputId = "modalSpinner")
-                             )
-                           )
-                         )
+          material_button(input_id = "bootButton",
+                          label = "Confidence Intervals and P-Values",
+                          color = colText),
+          uiOutput(outputId = "analyses"),
+          uiOutput(outputId = "analysisSpinner")
         )
       )
     )
   })
   
   #Calculation ----
-  output$modalAnalyses <- renderUI({
-    material_spinner_show(session = session, output_id = "modalSpinner")
+  analysis <- eventReactive(eventExpr = input$bootButton, valueExpr = {
+    material_spinner_show(session = session, output_id = "analysisSpinner")
+    
     overlapResults <- overlapCI(animal1 = a.dat(),
                                 animal2 = b.dat(),
                                 n.boot = input$bootSlider*1000)
@@ -770,40 +765,62 @@ function(input, output, session) {
                                       a.dat(),
                                       b.dat(),
                                       trials = input$bootSlider*1000)
+    
+    material_spinner_hide(session = session, output_id = "analysisSpinner")
+    
+    return(list(overlap = overlapResults, watson = watsonResults, uniform = uniformResults))
+  }, ignoreInit = TRUE)
+  
+  output$analyses <- renderUI({
     material_row(
       material_column(
-        width = 6,
+        width = 12,
         HTML(paste0(
+          #Overlap
+          "<br>",
           "<u>95% Confidence Interval for &Delta;</u> <br>",
-          overlapResults["lower"], " to ", overlapResults["upper"],
-          "<br>"
-        )),
-        HTML(paste0(
+          analysis()$overlap["lower"], " to ", analysis()$overlap["upper"],
+          "<br> <br>",
+          
+          #Watson's U^2
           "<u>Watson's U<sup>2</sup></u> <br>",
           "Permutation test estimated p-value: ",
-          watsonResults, "<br>",
+          try(round(
+            x = analysis()$watson["p.value"],
+            digits = 4
+          )),
+          "<br>",
           "Chi-Square Approximated p-value: ",
-          watson2test(a.dat(), b.dat())
-        ))
-      ),
-      material_column(
-        width = 6,
-        HTML(paste0(
+          try(round(
+            x = watson2test(a.dat(), b.dat()),
+            digits = 4
+          )),
+          "<br> <br>",
+          
+          #Uniform Scores
           "<u>Uniform Scores W<sub>2</sub></u> <br>",
           "Permutation test estimated p-value: ",
-          uniformResults, "<br>",
+          try(round(
+            x = analysis()$uniform["p.value"],
+            digits = 4
+          )), "<br>",
           "Chi-Square Approximated p-value: ",
-          w.prob.chi(a.dat(), b.dat()),
-          "<br>",
-          "<u>Fisher's Exact Test, data broken into 12 equally-spaced bins with 100,000 simulated trials</u> <br>",
+          try(round(
+            x = w.prob.chi(a.dat(), b.dat()),
+            digits = 4
+          )),
+          "<br> <br>",
+          
+          #Fisher's Exact
+          "<u>Fisher's Exact Test, 12 bins, 100k trials</u> <br>",
           circularFisherTest(animal1 = a.dat(),
                              animal2 = b.dat(),
-                             bins = 12)
+                             bins = 12),
+          "<br>"
         ))
       )
     )
     
-    material_spinner_hide(session = session, output_id = "modalSpinner")
   })
   
 }

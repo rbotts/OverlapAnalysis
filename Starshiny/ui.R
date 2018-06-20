@@ -184,7 +184,7 @@ material_page(
       material_column(width = 8, uiOutput(outputId = "filterUI"))
     ),
     
-    material_row(material_column(width = 12, uiOutput(outputId = "loadingSpinner"))),
+    material_row(uiOutput(outputId = "loadingSpinner")),
     
     #*Second Row ----
     material_row(
