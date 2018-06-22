@@ -1,13 +1,15 @@
 #R Version 3.4.4
 #Database correction 2018
+#This is just for our data set; not applicable for other research groups
 
-raw.data <- read.csv("~/Documents/MooringData2018.csv", stringsAsFactors = FALSE)
+raw.data <- read.csv("~/Documents/MooringData-June2018.csv", stringsAsFactors = FALSE)[-c(2,5:7,9,10,22:24)]
 
 #Remove bad data from York and ASBC
 raw.data <- raw.data[!(raw.data$CamNumber1 %in% c("N1", "N10", "N12", "N16", "Y5")), ]
 
 #Surveys and Sites ----
 raw.data$Survey.Name <- gsub(pattern = "Villa Mills", replacement = "Via Mills", x = raw.data$Survey.Name)
+raw.data$Survey.Name <- gsub(pattern = "CB", replacement = "Cabo Blanco", x = raw.data$Survey.Name)
 
 raw.data["Site"] <-
   gsub(
@@ -90,6 +92,9 @@ raw.data$Latitude[raw.data$CamNumber1 == "LC3"] <- 9.691998
 raw.data$Longitude[raw.data$CamNumber1 == "LC4"] <- -84.4008442282
 raw.data$Latitude[raw.data$CamNumber1 == "LC4"] <- 9.70903
 
+raw.data$Longitude[raw.data$CamNumber1 == "LC5"] <- -84.3903
+raw.data$Latitude[raw.data$CamNumber1 == "LC5"] <- 9.7064
+
 raw.data$Longitude[raw.data$CamNumber1 == "LM6"] <- -83.682933
 raw.data$Latitude[raw.data$CamNumber1 == "LM6"] <- 9.774967
 
@@ -143,7 +148,7 @@ switchLong <- Vectorize(function(a) {
     "ASBC" = -83.63265,
     "Tapanti" = -83.80563,
     "PN Carara" = -84.60031,
-    "CB" = -85.10316,
+    "Cabo Blanco" = -85.10316,
     "Marta" = -83.68404,
     "Chirripo" = -83.52597,
     "Via Mills" = -83.68726
@@ -156,7 +161,7 @@ switchLat <- Vectorize(function(a) {
     "ASBC" = 9.328311,
     "Tapanti" = 9.702569,
     "PN Carara" = 9.780654,
-    "CB" = 9.584736,
+    "Cabo Blanco" = 9.584736,
     "Marta" = 9.773979,
     "Chirripo" = 9.451092,
     "Via Mills" = 9.56043

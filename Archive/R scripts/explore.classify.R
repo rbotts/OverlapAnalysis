@@ -5,7 +5,7 @@
 require("suncalc")
 require("lubridate")
 
-raw.dat <- read.csv("~/Documents/MooringDataClean2018.csv")
+raw.dat <- read.csv("~/Documents/MooringData-June2018-Clean.csv")
 ind.dat <- raw.dat[raw.dat$Independent == "Yes", ]
 
 #Format date objects nicely
@@ -83,7 +83,7 @@ ind.dat["DayTime"] <- ifelse(test = (ind.dat$SolarHour > 5 & ind.dat$SolarHour <
                              yes = "Crepuscular",
                              no = ind.dat$DayTime)
 
-speciesList <- unique(ind.dat$Species)
+speciesList <- sort(unique(ind.dat$Species))
 output <- list()
 
 #Tabulate percentage of day/night/crepuscular for each species
@@ -124,4 +124,4 @@ results["Classification"] <- ifelse(test = results$Night <= 0.1,
                                                             no = ifelse(test = results$Night > 0.7 & results$Night <= 0.9,
                                                                         yes = "Mostly Nocturnal",
                                                                         no = "Cathemeral"))))
-write.csv(x = results, file = "~/Downloads/dayTime.csv", row.names = FALSE)
+write.csv(x = results, file = "~/Downloads/dayTime-June2018.csv", row.names = FALSE)
