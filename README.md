@@ -7,11 +7,11 @@ Overlap analysis is a method for quantifying how much overlap exists between two
 This folder contains the source code for a web app that is available online at https://tjwieg.shinyapps.io/Starshiny/. The app offers all the functionality of the scripts in the "Archive/R Scripts" folder, but with an intuitive graphical interface. Note that it can only calculate one set of values at a time, so writing a more complex script to run directly in R may be preferable for bulk data analysis.
 
 ### Archive
-This folder contains a few subfolders with old projects in it. These are kept around for historical reference, but they are not maintained.
+This folder contains a few subfolders with **old projects** in it. These are kept around for historical reference, but they are **not maintained.**
 
 - The R scripts folder mostly contains R programs that can perform overlap analysis on a data set and output bulk results rather than one at a time. It may be helpful for providing additional examples of how to use the overlap package in R.
-- The Shiny2 folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/shiny2/. That app has most of the functionality of the scripts found here, with a more beginner-friendly graphical interface. However, it can only calculate a single overlap coefficient (and associated 95% confidence interval) at a time.
-- The ShinyLunar folder contains the source code for a web app that is available at https://tjwieg.shinyapps.io/ShinyLunar/. That app is built to calculate many of the same overlap statistics that can be done by Shiny2 and the other scripts here, but it uses the phase of the moon as the independent time variable (x-axis).
+- The Shiny2 folder contains the source code for a web app that was once available at https://tjwieg.shinyapps.io/shiny2/. That app has most of the functionality of the scripts found here, with a more beginner-friendly graphical interface. However, it can only calculate a single overlap coefficient (and associated 95% confidence interval) at a time.
+- The ShinyLunar folder contains the source code for a web app that was once available at https://tjwieg.shinyapps.io/ShinyLunar/. That app is built to calculate many of the same overlap statistics that can be done by Shiny2 and the other scripts here, but it uses the phase of the moon as the independent time variable (x-axis).
 - The Example folder contains a sample data set (sampledata.csv), some sample plots, some basic results from our data, and a simple script to show some of the basic functionalities of the overlap package in R. Note that the sample data does *not* work with Starshiny.
 
 ### StatisticFunctions
