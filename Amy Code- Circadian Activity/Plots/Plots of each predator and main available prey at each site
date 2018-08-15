@@ -1,0 +1,389 @@
+#Need to change data filename in line 10, species in namelist if change in lines 30 and 31, species in legend if change in lines 241, 262 283, 303, 323, 343, 363, 383plot folder names in lines 227, 248, 269, 289, 309, 329, 349, 369, plot file names in lines 231, 252, 273, 293, 313, 333 353, 373
+
+library(tictoc)
+library(data.table)
+library(overlap)
+library(suncalc)
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data.csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+
+
+
+#Gets list of names ----  
+predators <- c("Panthera onca","Puma concolor", "Canis latrans", "Leopardus pardalis","Leopardus tigrinus oncilla")
+preys <- c("Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicana", "Tapirus bairdii")
+
+
+#Gets sites ---- 
+sites <- names(table(ind.data$Site))
+
+
+#Define functions for easy calling: main ----
+plotMarta <- function(animal) {
+  animal1 <-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animal & (ind.data$Site == "Marta"|ind.data$Site == "Copal"|ind.data$Site == "Pejibaye"))
+  n=length(animal1)
+  
+  tryCatch(
+    expr = {densityPlot(animal1, main = paste0(animal), rug = TRUE, extend = NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 1 "))})
+  return(n)
+}
+
+
+plotTapanti <- function(animal){
+  animal2 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills"))
+  n=length(animal2)
+  
+  tryCatch(
+    expr = {densityPlot(animal2, main = paste0(animal), rug = TRUE, extend=NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 2"))})
+  return(n)
+}
+
+plotSavegre <- function(animal){
+  animal3 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Savegre Valley")
+  n=length(animal3)
+  
+  tryCatch(
+    expr = {densityPlot(animal3, main = paste0(animal), rug = TRUE, extend = NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 3"))})
+  return(n)
+}
+
+plotASBC <- function(animal){
+  animal4 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes"))
+  n4=length(animal4)
+  
+  tryCatch(
+    expr = {densityPlot(animal4, main = paste0(animal), rug = TRUE, extend=NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 4"))})
+  return(n4)
+}
+
+plotChirripo <- function(animal){
+  animal5 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Chirripo")
+  n5=length(animal5)
+  
+  tryCatch(
+    expr = {densityPlot(animal5, main = paste0(animal), rug = TRUE, extend=NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 5"))})
+  return(n5)
+}
+
+plotCB <- function(animal){
+  animal6 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara"))
+  n6=length(animal6)
+  tryCatch(
+    expr = {densityPlot(animal6, main = paste0(animal), rug = TRUE, extend = NULL, ylim = c(0,0.3))}, 
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 6"))})
+  return(n6)
+}
+
+plotOsa <- function(animal){
+  animal7 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Osa Campanario")
+  n7=length(animal7)
+  tryCatch(
+    expr = {densityPlot(animal7, main = paste0(animal), rug = TRUE, extend =  NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, " location 7"))})
+  return(n7)
+}
+
+plotPILA <- function(animal){
+  animal8 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "PILA")
+  n8=length(animal8)
+  tryCatch(
+    expr = {densityPlot(animal8, main = paste0(animal), rug = TRUE, extend = NULL, ylim = c(0,0.3))},
+    error= function(cond){
+      need<<-1
+      message(paste0(animal, "location 8"))})
+  return(n8)
+}
+
+#Define functions for easy calling: Add Plots----
+plotMartaadd <- function(animal, color) {
+  animal1 <-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animal & (ind.data$Site == "Marta"|ind.data$Site == "Copal"|ind.data$Site == "Pejibaye"))
+  n=length(animal1)
+  
+  tryCatch(
+    expr = {densityPlot(animal1, add=TRUE, rug = TRUE, extend=NULL, col = color)},
+    error= function(cond){
+      message(paste0(animal, " location 1 "))})
+  return(n)
+}
+
+
+plotTapantiadd <- function(animal, color){
+  animal2 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills"))
+  n=length(animal2)
+  
+  tryCatch(
+    expr = {densityPlot(animal2, add = TRUE, rug = TRUE, extend = NULL, col=color)},
+    error= function(cond){
+      message(paste0(animal, " location 2"))})
+  return(n)
+}
+
+plotSavegreadd <- function(animal, color){
+  animal3 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Savegre Valley")
+  n=length(animal3)
+  
+  tryCatch(
+    expr = {densityPlot(animal3, add=TRUE, rug = TRUE, extend = NULL, col= color)},
+    error= function(cond){
+      message(paste0(animal, " location 3"))})
+  return(n)
+}
+
+plotASBCadd <- function(animal, color){
+  animal4 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes"))
+  n4=length(animal4)
+  
+  tryCatch(
+    expr = {densityPlot(animal4, add=TRUE, rug = TRUE, extend=NULL, col=color)},
+    error= function(cond){
+      message(paste0(animal, " location 4"))})
+  return(n4)
+}
+
+plotChirripoadd <- function(animal, color){
+  animal5 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Chirripo")
+  n5=length(animal5)
+  
+  tryCatch(
+    expr = {densityPlot(animal5, add=TRUE, rug = TRUE, extend=NULL, col=color)},
+    error= function(cond){
+      message(paste0(animal, " location 5"))})
+  return(n5)
+}
+
+plotCBadd <- function(animal, color){
+  animal6 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara"))
+  n6=length(animal6)
+  tryCatch(
+    expr = {densityPlot(animal6, add=TRUE, rug = TRUE, extend = NULL, col=color)}, 
+    error= function(cond){
+      message(paste0(animal, " location 6"))})
+  return(n6)
+}
+
+plotOsaadd <- function(animal, color){
+  animal7 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Osa Campanario")
+  n7=length(animal7)
+  tryCatch(
+    expr = {densityPlot(animal7, add=TRUE, rug = TRUE, extend =  NULL, col=color)},
+    error= function(cond){
+      message(paste0(animal, " location 7"))})
+  return(n7)
+}
+
+plotPILAadd <- function(animal, color){
+  animal8 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "PILA")
+  n8=length(animal8)
+  tryCatch(
+    expr = {densityPlot(animal8, add=TRUE, rug = TRUE, extend = NULL, col=color)},
+    error= function(cond){
+      message(paste0(animal, "location 8"))})
+  return(n8)
+}
+
+colors <- c("blue", "red", "yellow", "purple", "pink", "green", "orange", "dark blue", "dark green")
+
+#Generating plots ----
+#for locations Marta, Copal, Pejibaye
+site = "Marta, Copal"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need=0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotMarta(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotMartaadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+
+#for location Tapanti, Villa Mills
+site = "Tapanti"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need=0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotTapanti(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotTapantiadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+
+#for location Savegre Valley
+site = "Savegre"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need=0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotSavegre(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotSavegreadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+#for location ASBC, Bosque de Agua, Yorks Nubes
+site = "ASBC and Bosque de Agua"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need = 0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotASBC(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotASBCadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+#for location Chirripo
+site = "Chirripo"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need = 0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotChirripo(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotChirripoadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+}}
+
+
+#for location Cabo Blanco, PNCL, PN Carara
+site = "CB, PNCL, PNC"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need = 0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotCB(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotCBadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+#for location Osa Campanario
+site = "Osa"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need = 0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  png(file = filename, width = 800, height = 400)
+  plotOsa(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotOsaadd(prey, color)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+#for location PILA
+site = "PILA"
+foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/",site)
+dir.create(foldername)
+for (predator in predators){
+  need = 0
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity of Predators and Prey at Each Site/", site, "/", predator,".png")
+  #png(file = filename, width = 800, height = 400)
+  plotPILA(predator)
+  c = 0
+  if (need == 0){
+    for(prey in preys){
+      c = c+1
+      color = colors[c]
+      plotPILAadd(prey)
+    }
+    legend('topleft', c(paste0(predator), "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicanan", "Tapirus bairdii"), lty=1, col=c("black","blue","red","yellow","purple", "pink","green", "orange","dark blue", "dark green"))
+  }
+}
+
+
+dev.off()
+
