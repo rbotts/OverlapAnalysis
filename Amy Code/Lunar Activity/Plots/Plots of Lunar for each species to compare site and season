@@ -1,0 +1,147 @@
+#Need to change data file name in line 10, species if change in line 120, plot folder names in line 131 and plot file name in line 137
+library(tictoc)
+library(data.table)
+library(overlap)
+library(suncalc)
+
+tic("OverallTime")
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+ind.data <- subset(ind.data, ind.data$Time < 0.25 | ind.data$Time >= 0.75) #rough approximation of "only use nighttime data"
+
+
+ind.data["LunarDate"] <- as.Date(ind.data$Date, "%m/%d/%Y")
+
+ind.data["Lunar"] <- (getMoonIllumination(ind.data$LunarDate, "phase")[,2])*2*pi
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+ind.data["Month"] <- gsub("\\/\\d*\\/\\d*", "", ind.data$Date)
+
+ind.data["Season"] <-
+  ifelse(
+    ind.data$Month ==1 | ind.data$Month == 2 | ind.data$Month == 3,
+    "Winter",
+    ifelse(
+      ind.data$Month ==4 | ind.data$Month == 5 | ind.data$Month == 6,
+      "Spring",
+      ifelse(
+        ind.data$Month ==7 | ind.data$Month == 8 | ind.data$Month == 9,
+        "Summer",
+        ifelse(
+          ind.data$Month ==10 | ind.data$Month == 11 | ind.data$Month == 12,
+          "Fall", "Other"))))
+
+
+#Overlap Plot Function ----
+#generates plot if able to, if not returns an error message
+lunarplotsite <- function(animal, site) {
+  par(mfrow=c(2,3), mar=c(2,2,2,2), oma=c(3,1,1,0))
+  
+  #for Winter
+  animal1 <-subset(ind.data$Lunar,
+                   ind.data$Species == animal & ind.data$Season == "Winter" & ind.data$Site == site)
+  n1=length(animal1)
+  tryCatch(
+    expr = {densityPlot(animal1, main = paste0("Winter ", n1), rug = TRUE, xscale = NA, xaxt = "n", extend = NULL)
+      axis(
+        side = 1,
+        at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+        pos = ,
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))}, 
+    error= function(cond){
+      message(paste0(animal, " Winter ", site))})
+  
+  #for Spring
+  animal2 <-subset(ind.data$Lunar, ind.data$Species == animal & ind.data$Season == "Spring" & ind.data$Site == site)
+  n2=length(animal2)
+  tryCatch(
+    expr = {densityPlot(animal2, main = paste0("Spring ", n2), rug = TRUE, xscale = NA, xaxt = "n", extend = NULL)
+      axis(
+        side = 1,
+        at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+        pos = ,
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))}, 
+    error= function(cond){
+      message(paste0(animal, " Spring ", site))})
+  
+  
+  #for Summer
+  animal3 <-subset(ind.data$Lunar, ind.data$Species == animal & ind.data$Season == "Summer" & ind.data$Site == site)
+  n3=length(animal3)
+  tryCatch(
+    expr = {densityPlot(animal3, main = paste0("Summer ", n3), rug = TRUE, xscale = NA, xaxt = "n", extend = NULL)
+      axis(
+        side = 1,
+        at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+        pos = ,
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))}, 
+    error= function(cond){
+      message(paste0(animal, " Summer ", site))})
+  
+  
+  #for Fall
+  animal4 <-subset(ind.data$Lunar, ind.data$Species == animal & ind.data$Season == "Fall" & ind.data$Site == site)
+  n4=length(animal4)
+  tryCatch(
+    expr = {densityPlot(animal4, main = paste0("Fall ", n4), rug = TRUE, xscale = NA, xaxt = "n", extend = NULL)
+      axis(
+        side = 1,
+        at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+        pos = ,
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))}, 
+    error= function(cond){
+      message(paste0(animal, " Fall ", site))})
+  
+  
+  #Overall
+  animaloverall <-subset(ind.data$Lunar, ind.data$Species == animal & ind.data$Site == site)
+  n5=length(animaloverall)
+  tryCatch(
+    expr = {densityPlot(animaloverall, main = paste0("Overall ", n5), rug = TRUE, xscale = NA, xaxt = "n", extend = NULL)
+      axis(
+        side = 1,
+        at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+        pos = ,
+        labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))}, 
+    error= function(cond){
+      message(paste0(animal, " Overall ", site))})
+  
+  title(paste0(animal, " ", site), outer = TRUE)
+}
+
+
+#Gets list of names ----  
+namelist <- c("Panthera onca","Puma concolor", "Canis latrans", "Leopardus pardalis","Leopardus tigrinus oncilla", "Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicana", "Tapirus bairdii")
+
+
+
+#Going through each site and season
+sites <- names(table(ind.data$Site))
+
+
+
+for (site in sites){
+  for (animal in namelist){
+    foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Lunar Overlap/Lunar Plots by Site and Season by Site/",site)
+    dir.create(foldername)
+    animaloverall <-subset(ind.data$Lunar, ind.data$Species == animal & ind.data$Site == site)
+    n5=length(animaloverall)
+    #ensures that plot can be produced
+    if (n5>2){
+      filename <- paste0("~/College/Mooring Research/2018/Statistics/Lunar Overlap/Lunar Plots by Site and Season by Site/",site, "/", animal, ".png")
+      png(file = filename, width = 800, height = 400)
+      lunarplotsite(animal, site)
+      dev.off()
+      }
+  }
+}
+
+
+
+
