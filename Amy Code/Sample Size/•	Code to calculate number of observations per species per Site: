@@ -1,0 +1,117 @@
+#Need to change: data filename line 9
+
+library(tictoc)
+library(data.table)
+library(overlap)
+library(suncalc)
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+#Gets list of names ----  
+nametable <- table(ind.data$Species)
+namelist <- names(nametable)
+namelist <- array(namelist,dim=c(length(namelist),1))
+
+sites <- names(table(ind.data$Site))
+
+#calculates n ----
+
+#For All Sites But Savegre
+observation <- function(animal){
+  #Quetzales
+  site = "Quetzales"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Group2 == "Campamento" | ind.data$Group2 == "Lagos" | ind.data$Group2 == "Las Vueltas" | ind.data$Group2 == "Ojo de Agua" | ind.data$Group2 == "Chanchos" | ind.data$Group2 == "Torres")))
+  size1 = cbind(animal, site, n)
+  
+  #Rio Savegre Valley
+  site = "Rio Savegre"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Group2 == "Dantica" | ind.data$Group2 == "Robles" | ind.data$Group2 == "Quebrada" | ind.data$Group2 == "Cumbre" | ind.data$Group2 == "Manantial" | ind.data$Group2 == "Sendero de la Danta" | ind.data$Group2 == "Finca" | ind.data$Group2 == "Cataratas" | ind.data$Group2 == "La Lira" | ind.data$Group2 == "Waterfall")))
+  size2 = cbind(animal, site, n)
+  
+  #ASBC
+  site = "ASBC"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "ASBC" & ind.data$Group2 != "Los Cusingos")))
+  size3 = cbind(animal, site, n)
+  
+  #Los Cusingos
+  site = "Los Cusingos"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Group2 == "Los Cusingos"))
+  size4 = cbind(animal, site, n)
+  
+  #Tapanti
+  site = "Tapanti"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Villa Mills" | ind.data$Site == "Yorks Nubes" | ind.data$Site == "Tapanti")))
+  size5 = cbind(animal, site, n)
+  
+  #Bosque de Agua
+  site = "Bosque de Agua"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Bosque de Agua"))
+  size6 = cbind(animal, site, n)
+  
+  #Cabo Blanco
+  site = "Cabo Blanco"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Cabo Blanco"))
+  size7 = cbind(animal, site, n)
+  
+  #PN Carara
+  site = "PN Carara"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "PN Carara"))
+  size8 = cbind(animal, site, n)
+  
+  #Osa Campanario
+  site = "Osa Campanario"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Osa Campanario"))
+  size9 = cbind(animal, site, n)
+  
+  #Chirripo
+  site = "Chirripo"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Chirripo"))
+  size10 = cbind(animal, site, n)
+  
+  #PILA
+  site = "PILA"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "PILA"))
+  size11 = cbind(animal, site, n)
+  
+  #PNLC
+  site = "PNLC"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "PNLC"))
+  size12 = cbind(animal, site, n)
+  
+  #Marta
+  site = "Marta"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Marta"))
+  size13 = cbind(animal, site, n)
+  
+  #Copal
+  site = "Copal"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Copal"))
+  size14 = cbind(animal, site, n)
+  
+  #Overall
+  site = "Overall"
+  n = length(subset(ind.data$Time.In.Radians, ind.data$Species == animal))
+  size15 = cbind(animal, site, n)
+  
+  
+  size <- rbind(size1, size2, size3, size4, size5, size6, size7, size8, size9, size10, size11, size12, size13, size14, size15)
+  
+  return(size)   
+}
+
+
+#Apply Function ----
+samplesize <- c()
+blank <- c()
+for (animal in namelist){
+  size <- observation(animal)
+  samplesize <- rbind(samplesize, size)
+}
