@@ -1,0 +1,123 @@
+#Calculates mixed model suitability comparing prey abundance as well as prey abundance multiplied by mass and circadian activity of predator with site as a random factor
+#Calculates RAIxMass - line 54 has data.frame prepared to print out for all pairs
+library(overlap)
+library(data.table)
+library(lme4)
+
+
+speciesmass <- read.csv("~/College/Mooring Research/2018/Data Sets/Species Mass.csv")
+species <- speciesmass[,2]
+mass <- speciesmass[,3]
+
+#Creates pairs given species identified as informative ----
+ocelotprey <- c("Dasyprocta punctata", "Tamandua mexicana", "Dasypus novemcitus", "Procyon lotor", "Nasua narica", "Pecari tajacu", "Didelphis marsupialis", "Eira barbara", "Philander opossum", "Sylvilagus dicei", "Cuniculus paca", "Mazama temama")
+
+jaguarprey <- c("Pecari tajacu", "Odocoileus virginianus", "Nasua narica", "Dasypus novemcitus", "Procyon lotor", "Mazama temama", "Cuniculus paca", "Tamandua mexicana", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei")
+
+coyoteprey <- c("Sylvilagus dicei", "Dasypus novemcitus", "Mazama temama", "Pecari tajacu", "Odocoileus virginianus")
+
+pumaprey <- c("Pecari tajacu", "Odocoileus virginianus", "Dasypus novemcitus", "Sylvilagus dicei", "Procyon lotor", "Nasua narica", "Cuniculus paca", "Canis latrans", "Conepatus semistriatus", "Mazama temama", "Tamandua mexicana", "Didelphis marsupialis", "Coendou mexicanus", "Philander opossum")
+
+oncillaprey <- c("Didelphis marsupialis", "Philander opossum")
+
+tayraprey <- c("Cuniculus paca", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei", "Nasua narica")
+
+
+#Reads in and pulls out predator-prey data ----  
+RAIcalcs <- read.csv("~/College/Mooring Research/2018/Statistics/RAI/RAIcalcs for Circadian.csv", stringsAsFactors = FALSE)
+
+predators <- c("Panthera onca","Puma concolor", "Canis latrans", "Leopardus pardalis","Leopardus tigrinus oncilla", "Eira barbara")
+preys <- c("Pecari tajacu", "Odocoileus virginianus", "Dasypus novemcitus", "Sylvilagus dicei", "Procyon lotor", "Nasua narica", "Cuniculus paca", "Canis latrans", "Conepatus semistriatus", "Mazama temama", "Tamandua mexicana", "Didelphis marsupialis", "Coendou mexicanus", "Philander opossum", "Dasyprocta punctata", "Eira barbara")
+
+predatorprey <- RAIcalcs[RAIcalcs$Species1 %in% predators & RAIcalcs$Species2 %in% preys,]
+
+#Calculates estimate*RAI*mass ----
+predatorprey["estimatexRAIxmass"] <- predatorprey$Estimate * predatorprey$RAIb * mass[match(predatorprey$Species2, species)]
+
+predatorprey["RAIxMass"] <- predatorprey$RAIb * mass[match(predatorprey$Species2, species)]
+
+#Splits predatorprey data into data frames for each predator
+
+canis <- subset(predatorprey, Species1 == "Canis latrans" & Species2 %in% coyoteprey)
+
+ocelot <- subset(predatorprey, Species1 == "Leopardus pardalis" & Species2 %in% ocelotprey)
+
+oncilla <- subset(predatorprey, Species1 == "Leopardus tigrinus oncilla" & Species2 %in% oncillaprey)
+
+jaguar <- subset(predatorprey, Species1 == "Panthera onca" & Species2 %in% jaguarprey)
+
+puma <- subset(predatorprey,  Species1 == "Puma concolor"& Species2 %in% pumaprey)
+
+tayra <- subset(predatorprey,  Species1 == "Eira barbara" & Species2 %in% tayraprey)
+
+#abundancexmass data.frame ----
+predatorpreyspecific <- rbind(canis,ocelot,oncilla,jaguar,puma,tayra)
+
+
+#RAI: runs anova on each predator against all prey species' RAI with site as a random intercept ----
+canislmer <- anova(lmer(Estimate~RAIb + (1|Site), canis), lmer(Estimate~(1|Site), canis))
+
+ocelotlmer <- anova(lmer(Estimate~RAIb + (1|Site), ocelot), lmer(Estimate~(1|Site), ocelot))
+
+#oncillalmer <- anova(lmer(Estimate~RAIb + (1|Site), oncilla), lmer(Estimate~(1|Site), oncilla)) ##only two prey species, won't calculate lmer
+
+jaguarlmer <- anova(lmer(Estimate~RAIb + (1|Site), jaguar), lmer(Estimate~(1|Site), jaguar))
+
+pumalmer <- anova(lmer(Estimate~RAIb + (1|Site), puma), lmer(Estimate~(1|Site), puma))
+
+tayralmer <- anova(lmer(Estimate~RAIb + (1|Site), tayra), lmer(Estimate~(1|Site), tayra))
+
+animalCircadian <- rbind(canislmer, ocelotlmer, jaguarlmer, pumalmer, tayralmer)
+
+
+
+
+#RAIxMAss: runs anova on each predator against all prey species' RAIxMAss with site as a random intercept ----
+canislmer <- anova(lmer(Estimate~RAIxMass + (1|Site), canis), lmer(Estimate~(1|Site), canis))
+
+ocelotlmer <- anova(lmer(Estimate~RAIxMass + (1|Site), ocelot), lmer(Estimate~(1|Site), ocelot))
+
+#oncillalmer <- anova(lmer(Estimate~RAIxMass + (1|Site), oncilla), lmer(Estimate~(1|Site), oncilla)) ##only two prey species, won't calculate lmer
+
+jaguarlmer <- anova(lmer(Estimate~RAIxMass + (1|Site), jaguar), lmer(Estimate~(1|Site), jaguar))
+
+pumalmer <- anova(lmer(Estimate~RAIxMass + (1|Site), puma), lmer(Estimate~(1|Site), puma))
+
+tayralmer <- anova(lmer(Estimate~RAIxMass + (1|Site), tayra), lmer(Estimate~(1|Site), tayra))
+
+animalCircadianwithMAss <- rbind(canislmer, ocelotlmer, jaguarlmer, pumalmer, tayralmer)
+
+
+#RAI Species random: runs anova on each predator against all prey species' RAIxMAss with site as a random intercept ----
+canislmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), canis), lmer(Estimate~(1|Site) + (1|Species2), canis))
+
+ocelotlmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), ocelot), lmer(Estimate~(1|Site) + (1|Species2), ocelot))
+
+#oncillalmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), oncilla), lmer(Estimate~(1|Site) + (1|Species2), oncilla)) ##only two prey species, won't calculate lmer
+
+jaguarlmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), jaguar), lmer(Estimate~(1|Site) + (1|Species2), jaguar))
+
+pumalmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), puma), lmer(Estimate~(1|Site) + (1|Species2), puma))
+
+tayralmer <- anova(lmer(Estimate~RAIxMass + (1|Site) + (1|Species2), tayra), lmer(Estimate~(1|Site) + (1|Species2), tayra))
+
+animalCircadianSpeciesRandom <- rbind(canislmer, ocelotlmer, jaguarlmer, pumalmer, tayralmer)
+
+
+#RAIxMass with Species Random: runs anova on each predator against all prey species' RAIxMAss with site as a random intercept ----
+canislmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), canis), lmer(Estimate~(1|Site) + (1|Species2), canis))
+
+ocelotlmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), ocelot), lmer(Estimate~(1|Site) + (1|Species2), ocelot))
+
+#oncillalmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), oncilla), lmer(Estimate~(1|Site) + (1|Species2), oncilla)) ##only two prey species, won't calculate lmer
+
+jaguarlmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), jaguar), lmer(Estimate~(1|Site) + (1|Species2), jaguar))
+
+pumalmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), puma), lmer(Estimate~(1|Site) + (1|Species2), puma))
+
+tayralmer <- anova(lmer(Estimate~RAIb + (1|Site) + (1|Species2), tayra), lmer(Estimate~(1|Site) + (1|Species2), tayra))
+
+animalCircadianwithMAsswithSpeciesRandom <- rbind(canislmer, ocelotlmer, jaguarlmer, pumalmer, tayralmer)
+
+#archive ----
+#summary(lmer(Estimate~RAIb + (1|Site) + Species2, tayra))
