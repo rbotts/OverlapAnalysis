@@ -1,0 +1,95 @@
+#Need to change prey names in lines 5, 7, 9, 11, 13, and 15, name of data filename in line 19, filename for plots in lines 44, 54, 64, 73, 82, 91
+library(lattice)
+library(latticeExtra) 
+
+ocelotprey <- c("Dasyprocta punctata", "Tamandua mexicana", "Dasypus novemcitus", "Procyon lotor", "Nasua narica", "Pecari tajacu", "Didelphis marsupialis", "Eira barbara", "Philander opossum", "Sylvilagus dicei", "Cuniculus paca", "Mazama temama")
+
+jaguarprey <- c("Pecari tajacu", "Odocoileus virginianus", "Nasua narica", "Dasypus novemcitus", "Procyon lotor", "Mazama temama", "Cuniculus paca", "Tamandua mexicana", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei")
+
+coyoteprey <- c("Sylvilagus dicei", "Dasypus novemcitus", "Mazama temama", "Pecari tajacu", "Odocoileus virginianus")
+
+pumaprey <- c("Pecari tajacu", "Odocoileus virginianus", "Dasypus novemcitus", "Sylvilagus dicei", "Procyon lotor", "Nasua narica", "Cuniculus paca", "Canis latrans", "Conepatus semistriatus", "Mazama temama", "Tamandua mexicana", "Didelphis marsupialis", "Coendou mexicanus", "Philander opossum")
+
+oncillaprey <- c("Didelphis marsupialis", "Philander opossum")
+
+tayraprey <- c("Cuniculus paca", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei", "Nasua narica")
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+ind.data["Time.In.Hours"] <- ind.data$Time * 24
+
+
+xticks <- c(0, 6, 12, 18, 24)
+
+#for puma
+  preydata <- subset(ind.data, ind.data$Species %in% pumaprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Puma concolor")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/puma.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Puma with prey"), xlab = "Time", auto.key=list(text=c("Prey", "Puma"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
+
+
+#for coyote
+  preydata <- subset(ind.data, ind.data$Species %in% canisprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Canis latrans")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/coyote.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Coyote with prey"), xlab = "Time", auto.key=list(text=c("Prey", "Coyote"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
+
+
+#for ocelot
+  preydata <- subset(ind.data, ind.data$Species %in% ocelotprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Leopardus pardalis")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/ocelot.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Ocelot with prey"), xlab = "Time", auto.key=list(text=c("Prey", "Ocelot"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
+
+#for jaguar
+  preydata <- subset(ind.data, ind.data$Species %in% jaguarprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Panthera onca")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/jaguar.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Jaguar with prey"), xlab = "Time", auto.key=list(text=c("Prey", "Jaguar"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
+
+#for oncilla
+  preydata <- subset(ind.data, ind.data$Species %in% oncillaprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Leopardus tigrinus oncilla")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/oncilla.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Oncilla with prey"), xlab = "Time", auto.key=list(text=c("Pre", "Oncilla"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
+
+#for tayra
+  preydata <- subset(ind.data, ind.data$Species == tayraprey)
+  predatordata <- subset(ind.data, ind.data$Species == "Eira barbara")
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/predator and each prey/tayra.png")
+  png(file=filename, width = 900, height = 500)
+  predatorPlot <- densityplot(~preydata$Time.In.Hours|factor(preydata$Species), ylim=c(0,0.1), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste("Tayra with prey"), xlab = "Time", auto.key=list(text=c("Prey", "Tayra"), lines=TRUE))
+  print(predatorPlot <- predatorPlot + densityplot(~Time.In.Hours, data = predatordata, col = "#ff00ff", plot.points = FALSE))
+  dev.off()
