@@ -1,0 +1,93 @@
+#Generates plots on all pairs with duplicates
+library(tictoc)
+library(data.table)
+library(overlap)
+
+
+tic("OverallTime")
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*", "", ind.data$Survey.Name)
+
+ind.data["Season"] <- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
+
+#Gets list of names ----  
+nametable <- table(ind.data$Species)
+print("These names were removed because sample size less than or equal to 15")
+print(list(names(nametable[nametable<=15])))
+nametable <- nametable[nametable > 15]  #Removes any species with a sample size less than or equal 15
+namelist <- names(nametable)
+namelist <- array(namelist,dim=c(length(namelist),1))
+
+#declare Functions for Easy Reference ----
+#Overlap Plot Function
+plot <- function(animalname1,animalname2) {
+  animal1<<-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animalname1) 
+  n1 = length(animal1)
+  animal2<<-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animalname2)
+  n2 = length(animal2)
+  
+  overlapPlot(
+    animal1, animal2,
+    main=paste0("Activity overlap between ", animalname1, " and ", animalname2),
+    rug=TRUE
+  )
+  legend("top", legend = c(paste0(animalname1, " ", n1), paste0(animalname2, " ", n2)), col=c("black", "blue"), lty=c(1,2)
+  )
+}
+
+
+
+#Overall statistic function
+overall<-function(pair){
+  animalname1<-pair[1]
+  animalname2<-pair[2]
+  animal1<<-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animalname1) 
+  
+  animal2<<-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animalname2)
+  
+  n1<<-length(animal1)
+  n2<<-length(animal2)
+  
+  foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity Overlap Plots with Duplicates/", animalname1)
+  dir.create(foldername)
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Activity Overlap/Activity Overlap Plots with Duplicates/", animalname1, "/", animalname1, " and ", animalname2, ".png")
+  png(file = filename, width = 800, height = 400)
+  plot(animalname1, animalname2)
+  dev.off()
+  
+}
+
+#Create pairs ----
+pairs<-data.frame(animal1=rep(namelist[,1], each = length(namelist)), animal2=rep(namelist[,1], times=length(namelist)))
+
+
+#apply function ----
+statistics<-apply(pairs, 1, function(pair)
+{
+  overall(pair)
+}
+)
+
+
+
+toc()
