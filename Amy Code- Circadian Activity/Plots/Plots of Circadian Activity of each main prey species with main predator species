@@ -1,0 +1,61 @@
+#Need to change data filename in line 15 an, species in namelist if change in lines 10 and 11, species in legend if change in lines 241, 262 283, 303, 323, 343, 363, 383plot folder names in lines 227, 248, 269, 289, 309, 329, 349, 369, plot file names in lines 231, 252, 273, 293, 313, 333 353, 373
+
+library(lattice)
+library(latticeExtra) 
+library(stringr)
+library(overlap)
+library(data.table)
+library(lme4)
+
+predators <- c("Panthera onca","Puma concolor", "Canis latrans", "Leopardus pardalis","Leopardus tigrinus oncilla", "Eira barbara")
+preys <- c("Pecari tajacu", "Odocoileus virginianus", "Dasypus novemcitus", "Sylvilagus dicei", "Procyon lotor", "Nasua narica", "Cuniculus paca", "Canis latrans", "Conepatus semistriatus", "Mazama temama", "Tamandua mexicana", "Didelphis marsupialis", "Coendou mexicanus", "Philander opossum", "Dasyprocta punctata", "Eira barbara")
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+ind.data["Time.In.Hours"] <- ind.data$Time * 24
+
+ind.data["SuperSite"] <- ifelse(ind.data$Site == "Marta"|ind.data$Site == "Copal"|ind.data$Site == "Pejibaye", "Marta", ifelse(ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills", "Tapanti", ifelse(ind.data$Site == "Savegre Valley", "Savegre", ifelse(ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes", "ASBC", ifelse(ind.data$Site == "Chirripo", "Chirripo", ifelse(ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara", "Cabo Blanco", ifelse(ind.data$Site == "Osa Campanario", "Osa", ifelse(ind.data$Site == "PILA", "PILA", NA))))))))
+
+ind.data["Abbrev"] <- gsub("(\\w)\\w*\\s(\\w)\\w*", "\\1\\2", ind.data$Species)
+
+
+
+
+
+xticks <- c(0, 6, 12, 18, 24)
+
+colors <- c("red2", "chartreuse1", "coral3", "sienna4", "turquoise2", "blueviolet", "blue1", "dark blue", "deeppink1", "hotpink4", "mediumspringgreen", "seagreen", "darkorange", "skyblue2")
+
+for (prey in preys){
+  
+  datasubset <- subset(ind.data, ind.data$Species == prey)
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/Relationship of Prey to Predators/", prey, ".png")
+  png(file=filename, width = 900, height = 500)
+  print(densityplot(~datasubset$Time.In.Hours|factor(datasubset$SuperSite), ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, scales = list(x = list(at = xticks)), main = paste(prey), xlab = "Time", auto.key = TRUE))
+  dev.off()
+  
+datasubset <- subset(ind.data, ind.data$Species == prey | ind.data$Species %in% predators)
+filename <- paste0("~/College/Mooring Research/2018/Statistics/Prey/Relationship of Prey to Predators/", prey, " with predators.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~datasubset$Time.In.Hours|factor(datasubset$SuperSite), group = datasubset$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = paste0(prey, " with all Predators"), xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(datasubset$Species)))]), text = list(names(table(datasubset$Species))))))
+dev.off()
+}
+
+
