@@ -1,0 +1,427 @@
+#Directions for Manipulating Code:
+#If changing number of bootstraps: change line 416 overall(pair, numboot = #)
+#If changing which tests are run: comment out call to functions in overall function beginning line 360 and beginning line 388    that binds test outputs in overall function (statistics <- cbind())
+#If generating plot, change folder location line 381 and file location line 383
+#If want to calculate only a select number of pairs, change the species in prey and predator lists in lines 405 and 406
+
+
+#Have comments printed after each pair done so progress can be tracked
+
+library(tictoc)
+library(data.table)
+library(overlap)
+library(suncalc)
+
+tic("OverallTime")
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+ind.data <- subset(ind.data, ind.data$Time < 0.25 | ind.data$Time >= 0.75) #rough approximation of "only use nighttime data"
+
+
+ind.data["Date"] <- as.Date(ind.data$Date, "%m/%d/%Y")
+
+ind.data["Lunar"] <- (getMoonIllumination(ind.data$Date, "phase")[,2])*2*pi
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+ind.data["Season"] <- ifelse(grepl("Spring", ind.data$Survey.Name), "Spring", ifelse(grepl("Summer", ind.data$Survey.Name), "Summer", ifelse(grepl("Fall", ind.data$Survey.Name), "Fall", "Other")))
+
+print("data set")
+
+
+#declare Functions for Easy Reference ----
+#Confidence Interval Function
+overlapCI <- function(animal1, animal2, numboot) {
+  
+  if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) >= 15) {
+    
+    ovlEstimate <- overlapEst(animal1, animal2, adjust=c(0.8, NA, NA))[1]
+    
+    boot1 <- resample(animal1, numboot)
+    boot2 <- resample(animal2, numboot)
+    ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
+    ovl.boot.ci <- bootCI(ovlEstimate, ovl.boot)
+    
+    ovlEstimate<- round(ovlEstimate, digits = 4)
+    ovlLower <- round(ovl.boot.ci[4,1], digits = 4)
+    ovlUpper <- round(ovl.boot.ci[4,2], digits = 4)
+    
+    ovl <- (data.frame(
+      "CI Estimate" = ovlEstimate,
+      "CI Lower" = ovlLower,
+      "CI Upper" = ovlUpper,
+      row.names = NULL
+    ))
+  } else if (min(length(animal1), length(animal2)) > 75) {
+    
+    ovlEstimate <- overlapEst(animal1, animal2, adjust=c(NA, 1, NA))[2]
+    
+    boot1 <- resample(animal1, numboot)
+    boot2 <- resample(animal2, numboot)
+    
+    ovl.boot <- bootEst(boot1, boot2, adjust=c(0.8, NA, NA))[,1]
+    ovl.boot.ci <- bootCI(ovlEstimate, ovl.boot)
+    
+    ovlEstimate<- round(ovlEstimate, digits = 4)
+    ovlLower <- round(ovl.boot.ci[4,1], digits = 4)
+    ovlUpper <- round(ovl.boot.ci[4,2], digits = 4)
+    
+    ovl <<- (data.frame(
+      "CI Estimate" = ovlEstimate,
+      "CI Lower" = ovlLower,
+      "CI Upper" = ovlUpper,
+      row.names = NULL
+    ))
+    
+  } else {    #Probably not used because eliminate any sample size that is less than or equal to 15
+    ovlEstimate=NA
+    ovlLower=NA
+    ovlUpper=NA
+    ovl <<- (data.frame(
+      "CI Estimate" = ovlEstimate,
+      "CI Lower" = ovlLower,
+      "CI Upper" = ovlUpper,
+      row.names = NULL
+    ))
+  }
+  
+  
+  return(ovl)}
+
+#Declaring Watson functions, for easy calling later
+watson2 <- function(x, y) { #Function to calculate U-squared statistic, modified to work with "tied" data (See: Zar 1999)
+  n1 <- length(x)
+  n2 <- length(y)
+  #if (min(n1, n2) <= 17) return("Sample too small")
+  N <- n1+n2
+  
+  a <- c(x,y) #Putting all unique values into one ordered set, creating a unified coordinate system
+  a <- a[duplicated(a) == FALSE]
+  a <- a[order(a)]
+  kmax <- length(a)
+  
+  t1 <- t2 <- m1 <- m2 <- c1 <- c2 <- rep.int(0, kmax) #Preallocating several variables
+  
+  for (k in 1:kmax) { #Finding the frequency of each value in x and y, respectively
+    t1[k] <- sum(x==a[k])
+    t2[k] <- sum(y==a[k])
+  }
+  
+  m1 <- cumsum(t1) #Calculating the cumulative frequency distributions of x and y, respectively
+  m2 <- cumsum(t2)
+  
+  c1 <- m1/n1 #Calculating the cumulative relative frequency distributions of x and y, respectively
+  c2 <- m2/n2
+  
+  d <- c1-c2 
+  t <- t1+t2 #The total frequency of each value; used when there are multiple observations of a value (ties)
+  
+  da <- sum(d*t)
+  db <- sum(d*d*t)
+  U2 <- ((n1*n2)/(N^2))*(db - ((da^2)/N)) #Calculating the U-squared statistic
+  
+  return(U2)
+}
+
+
+watson2test <- function(x, y) { #Function to approximate the p-value of Watson's U-squared, given two vectors (See: Tiku 1965)
+  U2 <- watson2(x, y) #Calculate U-squared
+  N <- length(x) + length(y)
+  
+  a <- ((21*N)-56)/(840*(N-1.5))
+  b <- (N-1.5)/(42*N)
+  f <- ((49*N)*(N-1))/(20*((N-1.5)^2)) #Approximation constants
+  
+  chi <- (U2-a)/b
+  p <- pchisq(q = chi, df = f, lower.tail = FALSE) #Approximating from chi-squared distribution
+  watson<-data.frame("Watson Stat" = round(U2, digits=4), "Watson P-value" = p)
+  return(watson)
+}
+
+
+#Declaring W statistic functions, for easy calling later
+
+w.stat <- function(...) {
+  
+  #Function to calculate W statistic from 2 or more vectors of data (in RADIANS)
+  
+  
+  
+  #Data input and organization
+  
+  dataList <- list(...)
+  
+  unData <- data.frame(Point = sort(unlist(dataList)))
+  
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  
+  r <- length(n) #r is the number of vectors input
+  
+  
+  
+  #Linear Rank ----
+  
+  unData["Rank"] <- 1:N
+  
+  for (i in 1:N) {
+    
+    whenSame <- unData$Point == unData$Point[i] #Create logical vector of which points of unData$Point are the same as a given point
+    
+    numSame <- sum(whenSame) #How many times does this value appear?
+    
+    
+    
+    if (numSame > 1) { #If a value appears more than once...
+      
+      unData$Rank[whenSame] <- rep(mean(unData$Rank[whenSame]), times = numSame) #...every point with that value should take the average Rank
+      
+    }
+    
+  }
+  
+  
+  
+  unData["Uniform"] <- 2 * pi * unData$Rank / N #Circular Rank, a.k.a: "Uniform Score"
+  
+  
+  
+  #Calculating W ----
+  
+  C <- S <- rep(0, times = length(n)) #Preallocate values
+  
+  for (i in 1:length(n)) {
+    
+    for (j in 1:n[i]) {
+      
+      rankOrder <- unData$Uniform[unData$Point == dataList[[i]][j]]
+      
+      rankOrder <- mean(rankOrder) #mean() condenses rankOrder to a single value if vector
+      
+      C[i] <- C[i] + cos(rankOrder)
+      
+      S[i] <- S[i] + sin(rankOrder)
+      
+    }
+    
+  }
+  
+  
+  
+  W <- 2 * sum((C^2 + S^2)/n)
+  
+  return(W)
+  
+}
+
+w.prob <- function(..., trials = numboot, randomize = FALSE) {
+  
+  #Function to calculate p-value of the W statistic of given 2+ vectors of data (in RADIANS)
+  
+  
+  
+  #Data input ----
+  
+  dataList <- list(...)
+  
+  W0 <- do.call(what = w.stat, args = dataList) #W statistic of actual data
+  
+  n <- unlist(lapply(dataList, length)) #n is vector of sample sizes of each input vector
+  
+  N <- sum(n) #N is the *total* sample size, how many points were recorded overall
+  
+  r <- length(n) #r is the number of vectors input
+  
+  
+  
+  if(randomize | min(n) < 10) {
+    
+    #Randomization test ----
+    
+    randW <- rep(x = NA, times = trials) #Preallocate result vector
+    
+    
+    
+    for (i in 1:trials) {
+      
+      randList <- list()
+      
+      randDat <- sample(x = unlist(dataList), size = N, replace = FALSE) #Randomly resample points for each data vector from total population without replacement
+      
+      for (j in 1:r) {
+        
+        if (j == 1) randList[[1]] <- randDat[1:n[j]] #The first "new" data vector has n[1] points
+        
+        else {
+          
+          nStart <- length(unlist(randList))
+          
+          randList[[j]] <- randDat[(nStart+1):(nStart+n[j])] #The j'th "new" data vector has n[j] points
+          
+        }
+        
+      }
+      
+      randW[i] <- do.call(what = w.stat, args = randList) #Once all "new" data vectors constructed, calculate W of "new" dataset and store it in the randW vector
+      
+    }
+    
+    sortW <- sort(randW) #Arrange W statistics from randomization in ascending order
+    
+    p <- which.min(abs(sortW-W0)) #Figure out where W0 fits into the randomized distribution
+    
+    return(data.frame("W Stat" = round(W0, digits=4), "W P-value" = 1-(p/trials))) #p-value = the fraction of trials that gave a W greater than W0
+    
+  }
+  
+  else {
+    
+    return(data.frame("W Stat" = round(W0, digits=4), "W P-value" = pchisq(q = W0, df = 2*r - 2, lower.tail = FALSE))) #Approximate with Chi-square
+    
+  }
+  
+}
+
+#Overlap Plot Function
+plotlunar <- function(animal1, animal2, animalname1,animalname2) {
+  overlapPlot(
+    animal1, animal2,
+    xscale =  NA,
+    xlab = "Lunar Phase",
+    xaxt = "n",
+    main=paste0("Lunar overlap between ", animalname1, " and ", animalname2),
+    rug=TRUE
+  )
+  
+  axis(
+    side = 1,
+    at = c(0, pi/2, pi, 3*pi/2, 2*pi),
+    pos = ,
+    labels = c("New Moon", "First Quarter", "Full Moon", "Last Quarter", "New Moon"))
+  
+  legend("top", legend = c(animalname1, animalname2), col=c("black", "blue"), lty=c(1,2)
+  )
+}
+
+
+#Functions to bin data 
+binning <- function(x) {
+  #x is a vector of times in radians
+  
+  cutoffs <- c(0, pi/2, pi, 3*pi/2)
+  output <- rep(NA, times = length(x))   #puts all values to NA
+  
+  for (i in cutoffs) {
+    output <- ifelse(
+      test = x >= i,               #If x is greater than cutoff[n]...
+      yes = which(i == cutoffs),   #Then output should be n
+      no = output                  #Else it should stay what it is
+    )
+  }
+  
+  return(output)
+}
+
+#Function to calculate Chi-Squared
+chisquared <- function(animal1, animal2) {
+  animal1bin <- binning(animal1)
+  animal1bin <- setNames(tabulate(animal1bin), 1:max(animal1bin))
+  animal2bin <- binning(animal2)
+  animal2bin <- setNames(tabulate(animal2bin), 1:max(animal2bin))
+  animalbins <- rbind(animal1bin, animal2bin)
+  
+  #if (sum(animalbins<0)==0 & sum(animalbins<5)<=5){ #assumptions for Chi: all bins must be greater than 5 (R assumptions, had tried all bins   
+  #must be greater than 0 and no more than 20% of bins can be less than fifty (our table has 24 bins, 20% is 4.8 so 
+  #rounded up to no more than 5 bins))
+  # chistat <- chisq.test(animalbins)
+  
+  #stat = chistat["statistic"]
+  #pvalue = chistat["p.value"]
+  #chistat <- (data.frame("Chi2 Stat" = stat, "Chi2 P-value" = pvalue))
+  
+  # }else{
+  chistat <- fisher.test(animalbins, simulate.p.value=TRUE, B=1e5) #may need B=1e5 (# replicaetes)
+  
+  pvalue = chistat["p.value"]
+  chistat <- (data.frame("Chi2 P-value" = pvalue))
+  
+  #}
+  return(chistat)
+}
+
+
+#Overall statistic function
+overall<-function(pair, numboot){
+  animalname1<<-pair[1]
+  animalname2<<-pair[2]
+  animal1<<-subset(ind.data$Lunar,
+                   ind.data$Species == animalname1) 
+  
+  animal2<<-subset(ind.data$Lunar,
+                   ind.data$Species == animalname2)
+  
+  n1<<-length(animal1)
+  n2<<-length(animal2)
+  
+  
+  CI<-overlapCI(animal1,animal2, numboot)
+  
+  Watson2<-watson2test(animal1, animal2)
+
+  W<-w.prob(animal1,animal2, numboot)
+
+  Chi2<- chisquared(animal1,animal2)
+
+  foldername <- filename <- paste0("~/College/Mooring Research/2018/Statistics/Lunar Overlap/Lunar Overlap Plots/",animalname1)
+  dir.create(foldername)
+  filename <- paste0("~/College/Mooring Research/2018/Statistics/Lunar Overlap/Lunar Overlap Plots/", animalname1, "/", animalname1, " and ", animalname2, ".png")
+  png(file = filename, width = 800, height = 400)
+  plotlunar(animal1, animal2, animalname1, animalname2)
+  dev.off()
+  
+  
+  statistics <-
+    cbind(
+      n1,
+      n2,
+      CI,
+      Watson2,
+      W,
+     Chi2
+    )
+  
+  print(paste(animalname1, " and ", animalname2)) #comment to trace progress
+  
+  return(statistics)
+}
+
+
+#Creates pairs for Lunar given species identified as informative ----
+predator <- c("Panthera onca","Puma concolor", "Canis latrans", "Leopardus pardalis","Leopardus tigrinus oncilla")
+prey <- c("Cuniculus paca", "Dasypus novemcitus", "Didelphis marsupialis", "Mazama temama", "Philander opossum", "Procyon lotor", "Sylvilagus dicei", "Tamandua mexicana", "Tapirus bairdii")
+
+pairs<-data.frame(animal1=rep(predator, each = length(prey)), animal2=rep(prey, times=length(predator)))
+
+numboot = 100
+
+#apply function ----
+statistics<-apply(pairs, 1, function(pair)
+{
+  overall(pair, numboot)
+}
+)
+
+print("stats done")
+statistics<-rbindlist(statistics)
+statistics<-data.frame(pairs[1],pairs[2],statistics) #Combine statistics and names
+statistics<-statistics[,c(1,3,2,4:length(statistics))] #Reorders so sample size follows corresponding species
+#print("The last statistic p.value is the p-value for chi-squared, it's a bug that's proving difficult to fix")
+
+
+toc()
