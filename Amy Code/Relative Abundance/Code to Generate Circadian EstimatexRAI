@@ -1,0 +1,213 @@
+library(overlap)
+library(data.table)
+
+
+RAI <- read.csv("~/College/Mooring Research/2018/Statistics/RAI/RAI.csv")
+
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+
+#Gets list of names and pairs ----  
+nametable <- table(ind.data$Species)
+print("These names were removed because sample size less than or equal to 15")
+print(list(names(nametable[nametable<=15])))
+nametable <- nametable[nametable > 15]  #Removes any species with a sample size less than or equal 15
+namelist <- names(nametable)
+namelist <- array(namelist,dim=c(length(namelist),1))
+
+#Creates Pairs and removes doubles
+pairs<-data.frame(animal1=rep(namelist[,1], each = length(namelist)), animal2=rep(namelist[,1], times=length(namelist)))
+
+remove <- c()
+for (i in seq(1,length(pairs[,1]))){
+  if (pairs[i,1] == pairs[i,2]){
+    remove <- c(remove,i)
+  }}
+
+pairs<-pairs[-remove,]
+
+#declare Functions for Easy Reference ----
+#Confidence Interval Function
+overlapEstimate <- function(animal1, animal2) {
+  
+  if (min(length(animal1), length(animal2)) <= 75 & min(length(animal1), length(animal2)) > 15) {
+    
+    ovlEstimate <- overlapEst(animal1, animal2, adjust=c(0.8, NA, NA))[1]
+    ovlEstimate<- round(ovlEstimate, digits = 4)
+    
+  } else if (min(length(animal1), length(animal2)) > 75) {
+    
+    ovlEstimate <- overlapEst(animal1, animal2, adjust=c(NA, 1, NA))[2]
+    ovlEstimate<- round(ovlEstimate, digits = 4)
+  }else {
+    ovlEstimate = NA
+  }
+  
+  
+  return(ovlEstimate)}
+
+site1 <- function(animalna, animalnb){
+  
+  #Marta and Copal
+  site = "Marta, Copal"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & (ind.data$Site == "Marta"|ind.data$Site == "Copal"))
+  animalb <-subset(ind.data$Time.In.Radians,
+                   ind.data$Species == animalnb & (ind.data$Site == "Marta"|ind.data$Site == "Copal"))
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line1 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line1)
+}
+
+site2 <- function(animalna, animalnb){
+  #Tapanti
+  site = "Tapanti"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & (ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills"))
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & (ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills"))
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line2 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line2)
+}
+
+site3 <- function(animalna, animalnb){
+  #Savegre
+  site = "Savegre"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & ind.data$Site == "Savegre Valley")
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & ind.data$Site == "Savegre Valley")
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line3 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line3)
+}
+
+site4 <- function(animalna, animalnb){
+  
+  #Chirripo
+  site = "Chirripo"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & ind.data$Site == "Chirripo")
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & ind.data$Site == "Chirripo")
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line4 <-rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line4)
+}
+
+site5 <- function(animalna, animalnb){
+  
+  #ASBC, CBBA, Cusingos
+  site = "ASBC, Bosque de Agua, Cusingos"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & (ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes"))
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & (ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes"))
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line5 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line5)
+}
+
+site6 <- function(animalna, animalnb){
+  
+  #Cabo Blanco, Carara, PNLC
+  site = "CB, PNCL, PNC"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & (ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara"))
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & (ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara"))
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line6 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line6)
+}
+
+site7 <- function(animalna, animalnb){
+  
+  #Osa and PILA
+  site = "Osa and PILA"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna & (ind.data$Site == "Osa Campanario"|ind.data$Site == "PILA"))
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb & (ind.data$Site == "Osa Campanario"|ind.data$Site == "PILA"))
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line7 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  return(line7)
+}
+
+site8 <- function(animalna, animalnb){
+  
+  #Overall
+  site = "Overall"
+  animala <-subset(ind.data$Time.In.Radians, ind.data$Species == animalna)
+  animalb <-subset(ind.data$Time.In.Radians, ind.data$Species == animalnb)
+  estimate = overlapEstimate(animala, animalb)
+  RAIb <- subset(RAI$RAI, RAI$site == site & RAI$animal == animalnb)
+  estimatexRAI = estimate * RAIb
+  na <- length(animala)
+  nb <- length(animalb)
+  line8 <- rbind(animalna, na, animalnb, nb, site, estimate, RAIb, estimatexRAI)
+  
+  return(line8)
+}
+
+overall <- function(pair){
+  animalna<-pair[1]
+  animalnb<-pair[2]
+  line1<-site1(animalna, animalnb)
+  line2<-site2(animalna, animalnb)
+  line3<-site3(animalna, animalnb)
+  line4<-site4(animalna, animalnb)
+  line5<-site5(animalna, animalnb)
+  line6<-site6(animalna, animalnb)
+  line7<-site7(animalna, animalnb)
+  line8<-site8(animalna, animalnb)
+  calcsall <- data.frame(line1,line2,line3,line4,line5,line6,line7,line8)
+  return(calcsall)
+}
+
+#Calculations Overall----
+calcsall<-apply(pairs, 1, function(pair)
+{
+
+  overall(pair)
+  
+}
+)
+
+calcsall <- t(data.frame(calcsall))
+calcsallCircadian <- na.omit(calcsall)
+colnames(calcsallCircadian) <- c("Species1", "n1", "Species2", "n2", "Site", "Estimate", "RAIb", "EstimatexRAI")
