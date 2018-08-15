@@ -1,0 +1,101 @@
+#Need to change data filename in line 12, specific prey species if change in lines 35, 37, 39, 41, 43, 45, plot file names in lines 73, 78, 83, 88, 93, 98 
+
+library(lattice)
+library(latticeExtra) 
+library(stringr)
+library(overlap)
+library(data.table)
+library(lme4)
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+ind.data["Time.In.Hours"] <- ind.data$Time * 24
+
+ind.data["SuperSite"] <- ifelse(ind.data$Site == "Marta"|ind.data$Site == "Copal"|ind.data$Site == "Pejibaye", "Marta", ifelse(ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills", "Tapanti", ifelse(ind.data$Site == "Savegre Valley", "Savegre", ifelse(ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes", "ASBC", ifelse(ind.data$Site == "Chirripo", "Chirripo", ifelse(ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara", "Cabo Blanco", ifelse(ind.data$Site == "Osa Campanario", "Osa", ifelse(ind.data$Site == "PILA", "PILA", NA))))))))
+
+ind.data["Abbrev"] <- gsub("(\\w)\\w*\\s(\\w)\\w*", "\\1\\2", ind.data$Species)
+
+ocelotprey <- c("Dasyprocta punctata", "Tamandua mexicana", "Dasypus novemcitus", "Procyon lotor", "Nasua narica", "Pecari tajacu", "Didelphis marsupialis", "Eira barbara", "Philander opossum", "Sylvilagus dicei", "Cuniculus paca", "Mazama temama")
+
+jaguarprey <- c("Pecari tajacu", "Odocoileus virginianus", "Nasua narica", "Dasypus novemcitus", "Procyon lotor", "Mazama temama", "Cuniculus paca", "Tamandua mexicana", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei")
+
+coyoteprey <- c("Sylvilagus dicei", "Dasypus novemcitus", "Mazama temama", "Pecari tajacu", "Odocoileus virginianus")
+
+pumaprey <- c("Pecari tajacu", "Odocoileus virginianus", "Dasypus novemcitus", "Sylvilagus dicei", "Procyon lotor", "Nasua narica", "Cuniculus paca", "Canis latrans", "Conepatus semistriatus", "Mazama temama", "Tamandua mexicana", "Didelphis marsupialis", "Coendou mexicanus", "Philander opossum")
+
+oncillaprey <- c("Didelphis marsupialis", "Philander opossum")
+
+tayraprey <- c("Cuniculus paca", "Dasyprocta punctata", "Didelphis marsupialis", "Philander opossum", "Sylvilagus dicei", "Nasua narica")
+
+#Splits ind.data by predator and all specific prey, creates factors for each species name and site
+#abbreviates the names so first letter of genus and first letter of species
+
+canis <- subset(ind.data, ind.data$Species == "Canis latrans" | ind.data$Species %in% coyoteprey)
+
+
+ocelot <- subset(ind.data, ind.data$Species == "Leopardus pardalis" | ind.data$Species %in% ocelotprey)
+
+
+oncilla <- subset(ind.data, ind.data$Species == "Leopardus tigrinus oncilla" | ind.data$Species %in% oncillaprey)
+
+
+jaguar <- subset(ind.data, ind.data$Species == "Panthera onca" | ind.data$Species %in% jaguarprey)
+
+
+
+puma <- subset(ind.data, ind.data$Species == "Puma concolor" | ind.data$Species %in% pumaprey)
+
+
+tayra <- subset(ind.data, ind.data$Species == "Eira barbara" | ind.data$Species %in% tayraprey)
+
+
+xticks <- c(0, 6, 12, 18, 24)
+
+colors <- c("red2", "chartreuse1", "coral3", "sienna4", "turquoise2", "blueviolet", "blue1", "dark blue", "deeppink1", "hotpink4", "mediumspringgreen", "seagreen", "darkorange", "skyblue2")
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/ocelot.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~ocelot$Time.In.Hours|factor(ocelot$SuperSite), group = ocelot$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Leopardus pardalis", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(ocelot$Species)))]), text = list(names(table(ocelot$Species))))))
+dev.off()
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/coyote.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~canis$Time.In.Hours|factor(canis$SuperSite), group = canis$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Canis latrans", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(canis$Species)))]), text = list(names(table(canis$Species))))))
+dev.off()
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/oncilla.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~oncilla$Time.In.Hours|factor(oncilla$SuperSite), group = oncilla$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Leopardus tigrinus oncilla", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(oncilla$Species)))]), text = list(names(table(oncilla$Species))))))
+dev.off()
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/jaguar.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~jaguar$Time.In.Hours|factor(jaguar$SuperSite), group = jaguar$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Panthera onca", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(jaguar$Species)))]), text = list(names(table(jaguar$Species))))))
+dev.off()
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/puma.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~puma$Time.In.Hours|factor(puma$SuperSite), group = puma$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Puma concolor", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(puma$Species)))]), text = list(names(table(puma$Species))))))
+dev.off()
+
+filename <- paste0("~/College/Mooring Research/2018/Statistics/lmer/Plots/Circadian Activity of Each Predator and their Specific Prey at Each Supersite/tayra.png")
+png(file=filename, width = 900, height = 500)
+print(densityplot(~tayra$Time.In.Hours|factor(tayra$SuperSite), group = tayra$Species, ylim=c(0,0.3), xlim=c(0,24), plot.points = FALSE, col = colors, scales = list(x = list(at = xticks)), main = "Eira barbara", xlab = "Time", key = list(space = "bottom", columns = 3, lines = list(col = colors[1:length(names(table(tayra$Species)))]), text = list(names(table(tayra$Species))))))
+dev.off()
