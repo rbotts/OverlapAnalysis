@@ -1,0 +1,125 @@
+#Calculates relative abundance for every species observed at each supersite as well as overall
+
+library(overlap)
+library(data.table)
+
+#reads in camera days and mass----
+cameradays <<- read.csv("~/College/Mooring Research/2018/Data Sets/Camera Trap Days.csv")
+camera <- cameradays[,1]
+days <- cameradays[,2]
+
+
+
+
+#Corrects DataSet ----  
+ind.data <- read.csv("~/College/Mooring Research/2018/Data Sets/End of Spring 2018 All Data (wo Blanks and Unknowns).csv", stringsAsFactors = FALSE)
+ind.data <- subset(ind.data, ind.data["Independent"] ==  "Yes")
+ind.data <- subset(ind.data, ind.data$Species != "Unknown")
+ind.data <- subset(ind.data, ind.data$Species != "unknown")
+ind.data <- subset(ind.data, ind.data$Species != "")
+
+
+max.time <- max(ind.data$Time)
+
+if (max.time > 12 & max.time <= 24) {
+  ind.data["TimeRad"] <- ind.data$Time*2*pi/24
+} else if (max.time <= 1) {     
+  ind.data["TimeRad"] <- ind.data$Time*2*pi
+} else print("Unknown time format.")
+
+ind.data["Site"] <- gsub("\\s*20\\d\\d\\s*|\\s*Spring\\s*|\\s*Summer\\s*|\\s*Fall\\s*|\\s*El\\s*|\\s*La\\s*|\\s*National Park\\s*|\\-", "", ind.data$Survey.Name)
+
+
+#Gets list of names and pairs ----  
+nametable <- table(ind.data$Species)
+print("These names were removed because sample size less than or equal to 15")
+print(list(names(nametable[nametable<=15])))
+nametable <- nametable[nametable > 15]  #Removes any species with a sample size less than or equal 15
+namelist <- names(nametable)
+namelist <- array(namelist,dim=c(length(namelist),1))
+
+
+#declare Functions for Easy Reference ----
+#Calculate RAI
+calcRAI <- function(animal){
+  
+  #Marta-Copal
+  site = "Marta, Copal"
+  sumdays = sum(days[match("La Marta", camera)], days[match("El Copal", camera)])
+  animal1 <-subset(ind.data$Time.In.Radians,
+ind.data$Species == animal & (ind.data$Site == "Marta"|ind.data$Site == "Copal"))
+  n1=length(animal1) 
+  RAI = (n1/sumdays)*1000 #Number observations divided by the number of days the camera was active multiplied by 1000
+  line1 <- rbind(animal,site,n1,sumdays,RAI)
+  
+  #Tapanti
+  site = "Tapanti"
+  animal2 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Tapanti"| ind.data$Site == "Villa Mills"))
+  n2=length(animal2)
+  sumdays = days[match("Tapanti", camera)]
+  RAI = (n2/sumdays)*1000
+  line2 <- rbind(animal,site,n2,sumdays,RAI)
+  
+  #Savegre
+  site = "Savegre"
+  animal3 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Savegre Valley")
+  n3=length(animal3)
+  sumdays = sum(days[match("Upper Rio Savegre", camera)], days[match("Los Quetzales", camera)])
+  RAI = (n3/sumdays)*1000
+  line3 <- rbind(animal,site,n3,sumdays,RAI)
+  
+  #Chirripo
+  site = "Chirripo"
+  animal4 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & ind.data$Site == "Chirripo")
+  n4=length(animal4)
+  sumdays = days[match("Chirripo", camera)]
+  RAI = (n4/sumdays)*1000
+  line4 <- rbind(animal,site,n4,sumdays,RAI)
+  
+  #ASBC, CBBA, Cusingos
+  site = "ASBC, Bosque de Agua, Cusingos"
+  animal5 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "ASBC"|ind.data$Site == "Bosque de Agua"|ind.data$Site == "Yorks Nubes"))
+  n5=length(animal5)
+  sumdays = sum(days[match("CBBA", camera)], days[match("Los Cusingos", camera)], days[match("ASBC", camera)])
+  RAI = (n5/sumdays)*1000
+  line5 <- rbind(animal,site,n5,sumdays,RAI)
+  
+  #Cabo Blanco, Carara, PNLC
+  site = "CB, PNCL, PNC"
+  animal6 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Cabo Blanco"|ind.data$Site == "PNLC"|ind.data$Site == "PN Carara"))
+  n6=length(animal6)
+  sumdays = sum(days[match("PNLC", camera)], days[match("PN Carara", camera)], days[match("Cabo Blanco", camera)])
+  RAI = (n6/sumdays)*1000
+  line6 <- rbind(animal,site,n6,sumdays,RAI)
+  
+  #Osa and PILA
+  site = "Osa and PILA"
+  animal7 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal & (ind.data$Site == "Osa Campanario"|ind.data$Site == "PILA"))
+  n7=length(animal7)
+  sumdays = sum(days[match("Osa Campanario", camera)], days[match("PILA", camera)])
+  RAI = (n7/sumdays)*1000
+  line7 <- rbind(animal,site,n7,sumdays,RAI)
+  
+  #Overall
+  site = "Overall"
+  animal8 <-subset(ind.data$Time.In.Radians, ind.data$Species == animal)
+  n8 = length(animal8)
+  sumdays = sum(days)
+  RAI = (n8/sumdays)*1000
+  line8 <- rbind(animal,site,n8,sumdays,RAI)
+  
+  RAIall <- data.frame(line1,line2,line3,line4,line5,line6,line7,line8)
+  
+  return(RAIall)
+}
+
+#RAI Calculation----
+  RAIall <- apply(namelist, 1, function(animal){calcRAI(animal)}) 
+
+  RAIall <- t(data.frame(RAIall))
+  RAIall <- data.frame(RAIall)
+  
+
+
+  
+ 
